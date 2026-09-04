@@ -28,6 +28,14 @@ case "${1:-}" in
   index)
     "$EDITOR" "$DIR/data/index/INDEX.md" 2>/dev/null || open "$DIR/data/index/INDEX.md"
     ;;
+  web)
+    echo "http://127.0.0.1:8420 (Ctrl-C로 종료)"
+    open "http://127.0.0.1:8420" 2>/dev/null &
+    python3 app/webserver.py
+    ;;
+  gui)
+    python3 app/gui.py
+    ;;
   *)
     cat <<'USAGE'
 사용법:
@@ -37,6 +45,8 @@ case "${1:-}" in
   kb log "검색어" "url" "메모"   웹서칭 기록 남기기
   kb bench [개수]           자동 벤치마크 테스트
   kb index                 주제 요약 인덱스(INDEX.md) 열기
+  kb web                   브라우저에서 채팅 화면 열기(로컬 서버)
+  kb gui                   네이티브 창으로 채팅 화면 열기
 USAGE
     ;;
 esac

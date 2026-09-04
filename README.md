@@ -18,6 +18,8 @@
 - [x] 브라우저 히스토리 자동수집 — Chrome(전 프로필) 완료, Safari는 코드 완성됐으나 macOS 전체 디스크 접근 권한 필요(아래 참고)
 - [x] 하이브리드 검색(키워드 겹침 부스트) — 짧은 텍스트(브라우저 히스토리 제목 등)가 임베딩 코사인 점수에서 불리한 문제 보완
 - [x] 주제별 요약 인덱스(`data/index/`) — 원본 청크는 그대로 두고, 프로젝트 단위로 로컬 LLM 요약을 md로 남겨 `INDEX.md`부터 훑을 수 있게 함(Claude 자신의 MEMORY.md 구조를 참고). 내용 안 바뀐 주제는 재요약 안 하고 재사용(증분 빌드)
+- [x] `kb` CLI 단축 명령어 — venv/경로 신경 안 쓰고 바로 사용
+- [x] 브라우저 채팅 UI(`kb web`) + 네이티브 창(`kb gui`, pywebview) — SSE 스트리밍, 중단 후 이어쓰기 그대로 재사용
 
 ## 구조 (DDD 4계층)
 
@@ -38,7 +40,9 @@ src/
     resume/                중단된 생성 상태 파일 저장(data/partial_answers/)
     browserhistory/         Chrome/Safari 히스토리 DB 직접 파싱(임시 복사 후 읽음, WAL 포함)
     topicindex/             주제별 요약 md 파일 + 루트 INDEX.md 작성(data/index/)
-  presentation/cli/       답변/통계 포맷팅
+  presentation/
+    cli/                    답변/통계 포맷팅
+    web/                    FastAPI 서버 + 정적 채팅 UI (SSE 스트리밍, ask_resumable 재사용)
   app/                    container(공통 조립) / config / sync.py / ask.py / ask_resumable.py / log_search.py / run_benchmark.py
 ```
 
@@ -53,6 +57,8 @@ kb sync                              # 소스 수집 + 인덱싱 (매일 09:00 c
 kb log "검색어" "URL" "메모"          # 웹서칭 기록 남기기
 kb bench 100                         # 인덱싱된 데이터 기반 자동 질문 100개 생성 후 일괄 테스트
 kb index                             # 주제 요약 인덱스(INDEX.md) 열기
+kb web                               # 브라우저에서 채팅 화면 (http://127.0.0.1:8420)
+kb gui                               # 네이티브 창으로 채팅 화면 (pywebview)
 ```
 
 venv 활성화나 `src/` 경로 이동 없이 `kb` 명령 하나로 다 됨(`bin/kb`가 내부적으로 처리). Ollama 앱은 메뉴바에서 실행 중이어야 함(Spotlight로 "Ollama" 검색해서 실행, 터미널 불필요).
