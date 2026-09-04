@@ -2,9 +2,9 @@ import hashlib
 
 from domains.record.entities.generation_state import GenerationState
 from domains.record.entities.record import AnswerResult, DocumentChunk
-from domains.record.services.keyword_boost import boost_by_keyword_overlap
+from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title
 
-CANDIDATE_POOL_SIZE = 20
+CANDIDATE_POOL_SIZE = 50
 
 
 def make_key(question: str) -> str:
@@ -46,6 +46,7 @@ class AskQuestionResumableUseCase:
         else:
             query_embedding = self.embedding_service.embed([question])[0]
             candidates = self.vector_repository.search(query_embedding, max(self.top_k, CANDIDATE_POOL_SIZE))
+            candidates = dedup_by_title(candidates)
             chunks = boost_by_keyword_overlap(question, candidates, self.top_k)
             state = GenerationState(
                 key=key, question=question, stage="answering",

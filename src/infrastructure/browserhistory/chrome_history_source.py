@@ -4,6 +4,7 @@ import os
 import shutil
 import sqlite3
 import tempfile
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -64,18 +65,27 @@ class ChromeHistorySource(IDocumentSource):
             finally:
                 conn.close()
 
-        documents = []
+        # 같은 페이지를 URL 프래그먼트/쿼리만 다르게 여러 번 방문한 경우(예: 탭 전환,
+        # #settings/... 앵커 이동) (title, domain) 기준으로 하나로 합쳐서 중복이
+        # 검색 후보를 잠식하지 않게 한다.
+        groups = defaultdict(list)
         for url, title, visit_count, last_visit_time in rows:
-            url_hash = hashlib.sha1(url.encode()).hexdigest()[:16]
-            visited_at = _chrome_time_to_iso(last_visit_time)
             domain = urlparse(url).netloc
+            groups[(title, domain)].append((url, visit_count, last_visit_time))
+
+        documents = []
+        for (title, domain), visits in groups.items():
+            total_visit_count = sum(v[1] for v in visits)
+            url, _, last_visit_time = max(visits, key=lambda v: v[2])
+            url_hash = hashlib.sha1(f"{title}:{domain}".encode()).hexdigest()[:16]
+            visited_at = _chrome_time_to_iso(last_visit_time)
             documents.append(SourceDocument(
                 id=f"chrome:{profile_name}:{url_hash}",
                 source="browser_history",
                 project=f"Chrome/{profile_name}",
                 title=title,
                 url=url,
-                content=f"{title}\n{domain}\n방문 횟수: {visit_count}",
+                content=f"{title}\n{domain}\n방문 횟수: {total_visit_count}",
                 created_at=visited_at,
                 updated_at=visited_at,
             ))

@@ -3,6 +3,7 @@ import os
 import shutil
 import sqlite3
 import tempfile
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -63,18 +64,24 @@ class SafariHistorySource(IDocumentSource):
         except (PermissionError, sqlite3.OperationalError) as e:
             raise PermissionError(PERMISSION_HINT) from e
 
-        documents = []
+        groups = defaultdict(list)
         for url, title, visit_count, visit_time in rows:
-            url_hash = hashlib.sha1(url.encode()).hexdigest()[:16]
-            visited_at = _safari_time_to_iso(visit_time)
             domain = urlparse(url).netloc
+            groups[(title or url, domain)].append((url, visit_count, visit_time))
+
+        documents = []
+        for (title, domain), visits in groups.items():
+            total_visit_count = sum(v[1] for v in visits)
+            url, _, visit_time = max(visits, key=lambda v: v[2])
+            url_hash = hashlib.sha1(f"{title}:{domain}".encode()).hexdigest()[:16]
+            visited_at = _safari_time_to_iso(visit_time)
             documents.append(SourceDocument(
                 id=f"safari:{url_hash}",
                 source="browser_history",
                 project="Safari",
-                title=title or url,
+                title=title,
                 url=url,
-                content=f"{title}\n{domain}\n방문 횟수: {visit_count}",
+                content=f"{title}\n{domain}\n방문 횟수: {total_visit_count}",
                 created_at=visited_at,
                 updated_at=visited_at,
             ))

@@ -1,7 +1,7 @@
 from domains.record.entities.record import AnswerResult
-from domains.record.services.keyword_boost import boost_by_keyword_overlap
+from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title
 
-CANDIDATE_POOL_SIZE = 20
+CANDIDATE_POOL_SIZE = 50
 
 
 class AskQuestionUseCase:
@@ -13,6 +13,7 @@ class AskQuestionUseCase:
     def run(self, question: str, top_k: int = 5) -> AnswerResult:
         query_embedding = self.embedding_service.embed([question])[0]
         candidates = self.vector_repository.search(query_embedding, max(top_k, CANDIDATE_POOL_SIZE))
+        candidates = dedup_by_title(candidates)
         chunks = boost_by_keyword_overlap(question, candidates, top_k)
         answer = self.answer_generator.generate(question, chunks)
         return AnswerResult(answer=answer, citations=chunks)
