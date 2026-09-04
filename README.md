@@ -44,13 +44,23 @@ src/
 
 ## 실행
 
+최초 1회, `~/.zshrc`에 `export PATH="$HOME/knowledge-agent/bin:$PATH"` 추가(이미 되어있음) 후 새 터미널에서:
+
+```bash
+kb ask "질문 내용"                    # 질의
+kb ask-resume "질문 내용"             # 질의 (중단돼도 같은 질문으로 재실행하면 이어서 생성)
+kb sync                              # 소스 수집 + 인덱싱 (매일 09:00 cron 자동 실행됨)
+kb log "검색어" "URL" "메모"          # 웹서칭 기록 남기기
+kb bench 100                         # 인덱싱된 데이터 기반 자동 질문 100개 생성 후 일괄 테스트
+kb index                             # 주제 요약 인덱스(INDEX.md) 열기
+```
+
+venv 활성화나 `src/` 경로 이동 없이 `kb` 명령 하나로 다 됨(`bin/kb`가 내부적으로 처리). Ollama 앱은 메뉴바에서 실행 중이어야 함(Spotlight로 "Ollama" 검색해서 실행, 터미널 불필요).
+
+원본 명령어를 직접 쓰려면(디버깅 등):
 ```bash
 source .venv/bin/activate
-python src/app/sync.py              # 소스 수집 + 인덱싱
-python src/app/ask.py "질문 내용"    # 질의
-python src/app/ask_resumable.py "질문 내용"    # 질의 (중단돼도 같은 질문으로 재실행하면 이어서 생성)
-python src/app/log_search.py "검색어" "URL" "메모"   # 웹서칭 기록 남기기
-python src/app/run_benchmark.py 100  # 인덱싱된 데이터 기반 자동 질문 100개 생성 후 일괄 테스트
+cd src && python3 app/ask.py "질문 내용"
 ```
 
 ## 벤치마크 결과 (2026-09-04, 100문항)

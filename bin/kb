@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+DIR="/Users/jiho0215/knowledge-agent"
+source "$DIR/.venv/bin/activate"
+cd "$DIR/src"
+
+case "${1:-}" in
+  ask)
+    shift
+    python3 app/ask.py "$@"
+    ;;
+  ask-resume)
+    shift
+    python3 app/ask_resumable.py "$@"
+    ;;
+  sync)
+    python3 app/sync.py
+    ;;
+  log)
+    shift
+    python3 app/log_search.py "$@"
+    ;;
+  bench)
+    shift
+    python3 app/run_benchmark.py "$@"
+    ;;
+  index)
+    "$EDITOR" "$DIR/data/index/INDEX.md" 2>/dev/null || open "$DIR/data/index/INDEX.md"
+    ;;
+  *)
+    cat <<'USAGE'
+사용법:
+  kb ask "질문"            질문하고 바로 답 받기
+  kb ask-resume "질문"      중단돼도 이어쓰기 되는 질의
+  kb sync                  전체 소스 재인덱싱
+  kb log "검색어" "url" "메모"   웹서칭 기록 남기기
+  kb bench [개수]           자동 벤치마크 테스트
+  kb index                 주제 요약 인덱스(INDEX.md) 열기
+USAGE
+    ;;
+esac
