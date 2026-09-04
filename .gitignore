@@ -1,0 +1,8 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+data/*.db
+data/*.jsonl
+data/partial_answers/
+logs/
