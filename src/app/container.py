@@ -8,12 +8,15 @@ from infrastructure.github.github_source import GithubSource
 from infrastructure.notion.notion_source import NotionSource
 from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
 from infrastructure.ollama.ollama_embedding_service import OllamaEmbeddingService
+from infrastructure.ollama.ollama_summarizer import OllamaSummarizer
 from infrastructure.resume.file_generation_state_store import FileGenerationStateStore
+from infrastructure.topicindex.markdown_index_writer import MarkdownIndexWriter
 from infrastructure.vectorstore.sqlite_vector_repository import SqliteVectorRepository
 from infrastructure.websearch.websearch_log_source import WebSearchLogSource
 
 WEBSEARCH_LOG_PATH = os.path.join(config.BASE_DIR, "data", "websearch.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
+TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
 
 
 def build_sources() -> list:
@@ -46,3 +49,11 @@ def build_answer_generator() -> OllamaAnswerGenerator:
 
 def build_generation_state_store() -> FileGenerationStateStore:
     return FileGenerationStateStore(PARTIAL_ANSWERS_DIR)
+
+
+def build_summarizer() -> OllamaSummarizer:
+    return OllamaSummarizer(config.OLLAMA_HOST, config.ANSWER_MODEL)
+
+
+def build_index_writer() -> MarkdownIndexWriter:
+    return MarkdownIndexWriter(TOPIC_INDEX_DIR)

@@ -57,6 +57,33 @@ class SqliteVectorRepository(IVectorRepository):
         conn.commit()
         conn.close()
 
+    def list_projects(self) -> list:
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            """SELECT source, project, COUNT(*), MAX(updated_at)
+               FROM chunks GROUP BY source, project"""
+        ).fetchall()
+        conn.close()
+        return rows
+
+    def get_project_content(self, source: str, project: str, max_chars: int) -> str:
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            """SELECT DISTINCT title, content FROM chunks
+               WHERE source = ? AND project = ? ORDER BY document_id, id""",
+            (source, project),
+        ).fetchall()
+        conn.close()
+
+        parts, total = [], 0
+        for title, content in rows:
+            piece = f"[{title}]\n{content}"
+            if total + len(piece) > max_chars:
+                break
+            parts.append(piece)
+            total += len(piece)
+        return "\n\n".join(parts)
+
     def search(self, query_embedding: list, top_k: int) -> list:
         conn = sqlite3.connect(self.db_path)
         rows = conn.execute(

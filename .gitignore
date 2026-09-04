@@ -5,4 +5,5 @@ __pycache__/
 data/*.db
 data/*.jsonl
 data/partial_answers/
+data/index/
 logs/
