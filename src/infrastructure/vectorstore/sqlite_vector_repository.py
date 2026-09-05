@@ -93,6 +93,21 @@ class SqliteVectorRepository(IVectorRepository):
         conn.close()
         return self._rank_rows(rows, query_embedding, top_k)
 
+    def search_by_title_keywords(self, query_embedding: list, keywords: list, top_k: int) -> list:
+        if not keywords:
+            return []
+
+        conditions = " OR ".join(["lower(title) LIKE ?"] * len(keywords))
+        params = [f"%{k.lower()}%" for k in keywords]
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            "SELECT id, document_id, source, project, title, url, content, "
+            f"created_at, updated_at, embedding FROM chunks WHERE {conditions}",
+            params,
+        ).fetchall()
+        conn.close()
+        return self._rank_rows(rows, query_embedding, top_k)
+
     def search_within_date(self, query_embedding: list, date_from, date_to, top_k: int) -> list:
         conn = sqlite3.connect(self.db_path)
         rows = conn.execute(

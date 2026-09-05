@@ -32,12 +32,17 @@ def ask_stream(question: str):
 
     def event_gen():
         q = queue.Queue()
+        first_token_seen = [False]
 
         def on_answer(delta: str):
+            if not first_token_seen[0]:
+                first_token_seen[0] = True
+                q.put(("generating", None))
             q.put(("token", delta))
 
         def worker():
             try:
+                q.put(("searching", None))
                 result = use_case.run(question, think=True, on_answer=on_answer)
                 q.put(("done", result))
             except Exception as e:
@@ -47,7 +52,9 @@ def ask_stream(question: str):
 
         while True:
             kind, payload = q.get()
-            if kind == "token":
+            if kind in ("searching", "generating"):
+                yield f"data: {json.dumps({'type': kind}, ensure_ascii=False)}\n\n"
+            elif kind == "token":
                 yield f"data: {json.dumps({'type': 'token', 'text': payload}, ensure_ascii=False)}\n\n"
             elif kind == "done":
                 citations = [

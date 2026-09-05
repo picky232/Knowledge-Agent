@@ -58,14 +58,29 @@
     color: var(--ink-muted);
   }
   @keyframes blink { 50% { opacity: 0; } }
+  .status {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    padding: 4px 2px;
+  }
+  .status::after {
+    content: "";
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
   .citations {
-    margin-top: 8px;
+    margin-top: 6px;
     font-size: 12px;
     color: var(--ink-muted);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
   }
+  .citations summary {
+    cursor: pointer;
+    color: var(--ink-muted);
+    padding: 2px 0;
+    user-select: none;
+  }
+  .citations summary:hover { color: var(--accent); }
+  .citation-row { padding: 3px 0 0 12px; }
   .citations a { color: var(--accent); text-decoration: none; }
   .citations a:hover { text-decoration: underline; }
   form {
@@ -125,21 +140,44 @@ function addMsg(role, text) {
   return { wrap, bubble };
 }
 
+// 출처는 기본으로 접어둔다 — 대화 중에 매번 링크 목록이 끼어들면
+// 읽기 흐름이 끊기므로, 확인하고 싶을 때만 펼치게 한다.
 function renderCitations(wrap, citations) {
   if (!citations || citations.length === 0) return;
+
   const seen = new Set();
-  const box = document.createElement('div');
-  box.className = 'citations';
+  const rows = [];
   for (const c of citations) {
     const key = c.source + c.title + c.url;
     if (seen.has(key)) continue;
     seen.add(key);
+    rows.push(c);
+  }
+  if (rows.length === 0) return;
+
+  const details = document.createElement('details');
+  details.className = 'citations';
+  const summary = document.createElement('summary');
+  summary.textContent = `출처 ${rows.length}개`;
+  details.appendChild(summary);
+
+  for (const c of rows) {
     const date = (c.updated_at || '').slice(0, 10);
     const row = document.createElement('div');
-    row.innerHTML = `[${c.source}] ${c.title} (${date}) — <a href="${c.url}" target="_blank" rel="noopener">${c.url}</a>`;
-    box.appendChild(row);
+    row.className = 'citation-row';
+    if (c.url) {
+      const a = document.createElement('a');
+      a.href = c.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = c.title || c.url;
+      row.append(`[${c.source}] `, a, ` (${date})`);
+    } else {
+      row.textContent = `[${c.source}] ${c.title} (${date})`;
+    }
+    details.appendChild(row);
   }
-  wrap.appendChild(box);
+  wrap.appendChild(details);
 }
 
 form.addEventListener('submit', (e) => {
@@ -153,29 +191,43 @@ form.addEventListener('submit', (e) => {
   sendBtn.disabled = true;
 
   const { wrap, bubble } = addMsg('agent', '');
-  bubble.classList.add('pending');
+  const status = document.createElement('div');
+  status.className = 'status';
+  status.textContent = '검색 중…';
+  wrap.insertBefore(status, bubble);
+  bubble.style.display = 'none';
+
+  const showAnswer = () => {
+    status.remove();
+    bubble.style.display = '';
+  };
 
   const es = new EventSource(`/api/ask-stream?question=${encodeURIComponent(question)}`);
   es.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === 'token') {
+    if (data.type === 'searching') {
+      status.textContent = '검색 중…';
+    } else if (data.type === 'generating') {
+      status.textContent = '생각 중…';
+    } else if (data.type === 'token') {
+      if (status.isConnected) showAnswer();
       bubble.textContent += data.text;
       log.scrollTop = log.scrollHeight;
     } else if (data.type === 'done') {
-      bubble.classList.remove('pending');
+      showAnswer();
       renderCitations(wrap, data.citations);
       es.close();
       sendBtn.disabled = false;
       input.focus();
     } else if (data.type === 'error') {
-      bubble.classList.remove('pending');
+      showAnswer();
       bubble.textContent += `\n[오류: ${data.message}]`;
       es.close();
       sendBtn.disabled = false;
     }
   };
   es.onerror = () => {
-    bubble.classList.remove('pending');
+    showAnswer();
     es.close();
     sendBtn.disabled = false;
   };
