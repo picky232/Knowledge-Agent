@@ -23,6 +23,7 @@
 - [x] 날짜인지 검색 — "어제"/"오늘" 같은 상대 날짜를 실제 날짜구간으로 해석해 그 안에서만 검색, 날짜 의도가 있으면 대화·방문기록·웹서칭 같은 사건형 소스를 노션 같은 지식형 소스보다 우선
 - [x] 앱 사용 타임라인(`AppFocusSource`) — macOS `NSWorkspace` 알림 기반, 권한 불필요. `kb watch-focus`로 상시 감시하거나 LaunchAgent(`scripts/com.knowledgeagent.appfocus.plist`)로 로그인 시 자동 실행
 - [x] 창 제목 타임라인(`WindowTitleSource`) — Accessibility API 기반(5초 폴링). **손쉬운 사용 권한 필요 — 아직 승인 안 함**, 승인 전까지는 로그가 안 쌓일 뿐 다른 기능엔 영향 없음(에러 격리)
+- [x] 대화기록 6000자 잘림 문제 수정 — 세션 전체를 앞부분만 자르지 않고 **날짜별로 문서를 분리**해 각각 넉넉한 한도(2만자)를 둠. 이 프로젝트를 만든 세션처럼 며칠에 걸친 긴 세션도 날짜별로 다 보존됨(48청크→154청크로 증가)
 
 ## 구조 (DDD 4계층)
 
@@ -122,11 +123,12 @@ cd src && python3 app/ask.py "질문 내용"
 
 ## 다음 단계 (리서치 기반 v2 기획서 순서)
 
-1. `AppFocusSource` 추가 — macOS `NSWorkspace` 알림 기반 앱 전환 로그, 권한 불필요, 날짜인지 검색이 활용할 "언제 뭐 하고 있었는지" 데이터 확보
-2. `WindowTitleSource` 추가 — Accessibility API(권한 1회), 창 제목까지 확보
-3. 대화기록 소스가 세션당 앞 6000자로 잘리는 문제 — 긴 세션은 최근 내용이 인덱스에서 아예 빠짐
-4. `dateparser`가 "지난주"/"최근" 같은 주 단위 이상 상대 날짜는 못 잡는 한계 — 필요시 별도 규칙 추가
-5. 한글-영문 제목 불일치(예: "정글미팅" 질의가 실제 제목 "Jungle Meeting"과 매칭 안 됨) — 키워드 부스트가 언어 간에는 안 통함
-6. 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고)
+- [x] `AppFocusSource` — macOS `NSWorkspace` 알림 기반 앱 전환 로그, 권한 불필요
+- [x] `WindowTitleSource` — Accessibility API, 코드는 완성(승인 대기)
+- [x] 대화기록 6000자 잘림 → 날짜별 문서 분리로 해결
+- [ ] `dateparser`가 "지난주"/"최근" 같은 주 단위 이상 상대 날짜는 못 잡는 한계 — 필요시 별도 규칙 추가
+- [ ] 한글-영문 제목 불일치(예: "정글미팅" 질의가 실제 제목 "Jungle Meeting"과 매칭 안 됨) — 키워드 부스트가 언어 간에는 안 통함
+- [ ] Accessibility 권한 승인 — 시스템 설정에서 직접 해야 함, `WindowTitleSource` 활성화의 전제조건
+- [ ] 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고)
 
 리서치 배경과 상세 설계는 기획서 아티팩트 참고: [OS 활동 기억 에이전트 — 2단계 설계](https://claude.ai/code/artifact/1cd32129-746f-4dbf-b874-09541f969a1a)
