@@ -21,6 +21,7 @@
 - [x] `kb` CLI 단축 명령어 — venv/경로 신경 안 쓰고 바로 사용
 - [x] 브라우저 채팅 UI(`kb web`) + 네이티브 창(`kb gui`, pywebview) — SSE 스트리밍, 중단 후 이어쓰기 그대로 재사용
 - [x] 날짜인지 검색 — "어제"/"오늘" 같은 상대 날짜를 실제 날짜구간으로 해석해 그 안에서만 검색, 날짜 의도가 있으면 대화·방문기록·웹서칭 같은 사건형 소스를 노션 같은 지식형 소스보다 우선
+- [x] 앱 사용 타임라인(`AppFocusSource`) — macOS `NSWorkspace` 알림 기반, 권한 불필요. `kb watch-focus`로 상시 감시하거나 LaunchAgent(`scripts/com.knowledgeagent.appfocus.plist`)로 로그인 시 자동 실행
 
 ## 구조 (DDD 4계층)
 
@@ -60,9 +61,17 @@ kb bench 100                         # 인덱싱된 데이터 기반 자동 질�
 kb index                             # 주제 요약 인덱스(INDEX.md) 열기
 kb web                               # 브라우저에서 채팅 화면 (http://127.0.0.1:8420)
 kb gui                               # 네이티브 창으로 채팅 화면 (pywebview)
+kb watch-focus                       # 앱 전환 감시 (foreground, Ctrl-C 종료)
 ```
 
 venv 활성화나 `src/` 경로 이동 없이 `kb` 명령 하나로 다 됨(`bin/kb`가 내부적으로 처리). Ollama 앱은 메뉴바에서 실행 중이어야 함(Spotlight로 "Ollama" 검색해서 실행, 터미널 불필요).
+
+**앱 사용 타임라인 상시 감시** (로그인할 때마다 자동 실행, 이미 설치·실행됨):
+```bash
+cp scripts/com.knowledgeagent.appfocus.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist
+```
+중지: `launchctl unload ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist`
 
 원본 명령어를 직접 쓰려면(디버깅 등):
 ```bash

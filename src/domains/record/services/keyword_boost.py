@@ -1,7 +1,7 @@
 import re
 
 TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣]{2,}")
-EPISODIC_SOURCES = {"conversation", "browser_history", "websearch"}
+EPISODIC_SOURCES = {"conversation", "browser_history", "websearch", "app_focus", "window_title"}
 
 
 def prioritize_episodic_sources(chunks: list) -> list:

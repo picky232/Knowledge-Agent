@@ -1,6 +1,7 @@
 import os
 
 from app import config
+from infrastructure.appfocus.app_focus_source import AppFocusSource
 from infrastructure.browserhistory.chrome_history_source import ChromeHistorySource
 from infrastructure.browserhistory.safari_history_source import SafariHistorySource
 from infrastructure.conversationlog.conversation_log_source import ConversationLogSource
@@ -15,6 +16,7 @@ from infrastructure.vectorstore.sqlite_vector_repository import SqliteVectorRepo
 from infrastructure.websearch.websearch_log_source import WebSearchLogSource
 
 WEBSEARCH_LOG_PATH = os.path.join(config.BASE_DIR, "data", "websearch.jsonl")
+APP_FOCUS_LOG_PATH = os.path.join(config.BASE_DIR, "data", "app_focus.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
 TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
 
@@ -26,6 +28,7 @@ def build_sources() -> list:
         WebSearchLogSource(log_path=WEBSEARCH_LOG_PATH),
         ChromeHistorySource(lookback_days=30),
         SafariHistorySource(lookback_days=30),
+        AppFocusSource(log_path=APP_FOCUS_LOG_PATH),
     ]
     if config.NOTION_TOKEN:
         sources.append(NotionSource(token=config.NOTION_TOKEN))

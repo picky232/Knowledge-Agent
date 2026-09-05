@@ -2,6 +2,7 @@ requests
 python-dotenv
 numpy
 dateparser
+pyobjc-framework-Cocoa
 fastapi
 uvicorn
 pywebview
