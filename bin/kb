@@ -45,6 +45,9 @@ case "${1:-}" in
   watch-files)
     python3 app/watch_files.py
     ;;
+  watch-screen)
+    python3 app/watch_screen.py
+    ;;
   *)
     cat <<'USAGE'
 사용법:
@@ -59,6 +62,7 @@ case "${1:-}" in
   kb watch-focus           앱 전환 감시 데몬 실행(foreground, Ctrl-C로 종료)
   kb watch-window          창 제목 감시 데몬 실행(손쉬운 사용 권한 필요, foreground)
   kb watch-files           파일 작업 감시 데몬 실행(foreground, Ctrl-C로 종료)
+  kb watch-screen          화면 텍스트 감시 데몬 실행(화면 기록 권한 필요, foreground)
 USAGE
     ;;
 esac

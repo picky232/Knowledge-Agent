@@ -3,7 +3,7 @@ import re
 TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣]{2,}")
 EPISODIC_SOURCES = {
     "conversation", "browser_history", "websearch",
-    "app_focus", "window_title", "file_activity",
+    "app_focus", "window_title", "file_activity", "screen_text",
 }
 
 

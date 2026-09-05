@@ -23,6 +23,7 @@
 - [x] 날짜인지 검색 — "어제"/"오늘" 같은 상대 날짜를 실제 날짜구간으로 해석해 그 안에서만 검색, 날짜 의도가 있으면 대화·방문기록·웹서칭 같은 사건형 소스를 노션 같은 지식형 소스보다 우선
 - [x] 앱 사용 타임라인(`AppFocusSource`) — macOS `NSWorkspace` 알림 기반, 권한 불필요. `kb watch-focus`로 상시 감시하거나 LaunchAgent(`scripts/com.knowledgeagent.appfocus.plist`)로 로그인 시 자동 실행
 - [x] 창 제목 타임라인(`WindowTitleSource`) — Accessibility API 기반(5초 폴링). **손쉬운 사용 권한 필요 — 아직 승인 안 함**, 승인 전까지는 로그가 안 쌓일 뿐 다른 기능엔 영향 없음(에러 격리)
+- [x] 화면 텍스트 기록(`ScreenTextSource`) — 앱 전환 시에만 캡처 → Apple Vision OCR로 텍스트 추출 → **스크린샷 원본 즉시 삭제**, 텍스트만 보관. 비밀번호 관리자·은행 앱은 캡처 자체를 안 하고, OCR 결과에 민감어가 섞이면 그 캡처분을 통째로 버림. **화면 기록 권한 필요 — 아직 승인 안 함**
 - [x] 파일 작업 기록(`FileActivitySource`) — FSEvents(watchdog) 기반, 권한 불필요. 홈 아래 작업 폴더를 감시하되 `node_modules`·`.git`·캐시·숨김파일은 제외하고 코드/문서 확장자만 기록, 같은 파일 5분 디바운스
 - [x] 대화기록 6000자 잘림 문제 수정 — 세션 전체를 앞부분만 자르지 않고 **날짜별로 문서를 분리**해 각각 넉넉한 한도(2만자)를 둠. 이 프로젝트를 만든 세션처럼 며칠에 걸친 긴 세션도 날짜별로 다 보존됨(48청크→154청크로 증가)
 
@@ -47,6 +48,7 @@ src/
     appfocus/               NSWorkspace 앱 전환 로그 → 날짜별 타임라인
     windowtitle/            Accessibility API 창 제목 로그 → 날짜별 타임라인
     fileactivity/           FSEvents 파일 작업 로그 → 날짜별 기록(노이즈 필터 포함)
+    screentext/             화면 OCR 텍스트 로그 → 날짜별 기록(캡처 정책 필터 포함)
     topicindex/             주제별 요약 md 파일 + 루트 INDEX.md 작성(data/index/)
   presentation/
     cli/                    답변/통계 포맷팅
@@ -69,6 +71,7 @@ kb web                               # 브라우저에서 채팅 화면 (http://
 kb gui                               # 네이티브 창으로 채팅 화면 (pywebview)
 kb watch-focus                       # 앱 전환 감시 (foreground, Ctrl-C 종료)
 kb watch-files                       # 파일 작업 감시 (foreground, Ctrl-C 종료)
+kb watch-screen                      # 화면 텍스트 감시 (화면 기록 권한 필요)
 ```
 
 venv 활성화나 `src/` 경로 이동 없이 `kb` 명령 하나로 다 됨(`bin/kb`가 내부적으로 처리). Ollama 앱은 메뉴바에서 실행 중이어야 함(Spotlight로 "Ollama" 검색해서 실행, 터미널 불필요).
@@ -86,6 +89,21 @@ cp scripts/com.knowledgeagent.fileactivity.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.knowledgeagent.fileactivity.plist
 ```
 같은 파일은 5분에 한 번만 기록하므로 저장 한 번에 로그가 수십 줄씩 쌓이지 않음.
+
+**화면 텍스트 상시 감시** (화면 기록 권한 먼저 필요):
+1. `kb watch-screen` 한 번 실행 — 권한 없으면 안내 메시지 뜨고 종료
+2. 시스템 설정 > 개인정보 보호 및 보안 > 화면 및 시스템 오디오 기록에서 터미널 앱 추가
+3. 승인 후 상시 실행하려면:
+```bash
+cp scripts/com.knowledgeagent.screentext.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.knowledgeagent.screentext.plist
+```
+
+설계상 안전장치(Windows Recall이 반복해서 보안 문제를 겪은 지점을 피하려는 것):
+- 상시 녹화가 아니라 **앱 전환 시에만** 캡처하고, 같은 앱은 3분 내 재캡처 안 함
+- 캡처 → OCR → **이미지 파일 즉시 삭제**, 저장되는 건 텍스트뿐
+- 비밀번호 관리자·키체인·은행 앱은 캡처 자체를 건너뜀(`capture_policy.py`)
+- OCR 결과에 `password`/`api key`/`계좌` 같은 민감어가 있으면 그 캡처분 전체를 버림
 
 **창 제목 상시 감시** (손쉬운 사용 권한 먼저 필요):
 1. `kb watch-window` 한 번 실행 — 권한 없으면 안내 메시지 뜨고 종료
@@ -160,6 +178,7 @@ Ollama 기본 keep_alive가 짧아 서로를 메모리에서 밀어내며 매 �
 - [~] 한글-영문 제목 불일치(예: "정글미팅" → "Jungle Meeting" 매칭 안 됨) — 확인해보니 순수 임베딩 유사도로도 210위 밖이라 후보군 확장으론 해결 안 됨, 음역/발음매칭 엔진 필요. 공수 대비 효과 낮아 보류
 - [ ] Accessibility 권한 승인 — 시스템 설정에서 직접 해야 함, `WindowTitleSource` 활성화의 전제조건
 - [x] 파일 작업 감시(`FileActivitySource`) — 권한 불필요, LaunchAgent로 상시 실행 중
-- [ ] 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고). Screen Recording 권한(GUI 승인) 필요
+- [x] 화면 캡처 OCR(`ScreenTextSource`) — 구현 완료, 화면 기록 권한 승인만 남음
+- [ ] 권한 승인 2건(손쉬운 사용 / 화면 기록) — 시스템 설정에서 직접 해야 함. 승인 전까지 해당 소스만 비어있고 나머지는 정상
 
 리서치 배경과 상세 설계는 기획서 아티팩트 참고: [OS 활동 기억 에이전트 — 2단계 설계](https://claude.ai/code/artifact/1cd32129-746f-4dbf-b874-09541f969a1a)

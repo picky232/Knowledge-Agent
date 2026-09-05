@@ -12,6 +12,7 @@ from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
 from infrastructure.ollama.ollama_embedding_service import OllamaEmbeddingService
 from infrastructure.ollama.ollama_summarizer import OllamaSummarizer
 from infrastructure.resume.file_generation_state_store import FileGenerationStateStore
+from infrastructure.screentext.screen_text_source import ScreenTextSource
 from infrastructure.topicindex.markdown_index_writer import MarkdownIndexWriter
 from infrastructure.vectorstore.sqlite_vector_repository import SqliteVectorRepository
 from infrastructure.websearch.websearch_log_source import WebSearchLogSource
@@ -21,6 +22,7 @@ WEBSEARCH_LOG_PATH = os.path.join(config.BASE_DIR, "data", "websearch.jsonl")
 APP_FOCUS_LOG_PATH = os.path.join(config.BASE_DIR, "data", "app_focus.jsonl")
 WINDOW_TITLE_LOG_PATH = os.path.join(config.BASE_DIR, "data", "window_title.jsonl")
 FILE_ACTIVITY_LOG_PATH = os.path.join(config.BASE_DIR, "data", "file_activity.jsonl")
+SCREEN_TEXT_LOG_PATH = os.path.join(config.BASE_DIR, "data", "screen_text.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
 TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
 
@@ -35,6 +37,7 @@ def build_sources() -> list:
         AppFocusSource(log_path=APP_FOCUS_LOG_PATH),
         WindowTitleSource(log_path=WINDOW_TITLE_LOG_PATH),
         FileActivitySource(log_path=FILE_ACTIVITY_LOG_PATH),
+        ScreenTextSource(log_path=SCREEN_TEXT_LOG_PATH),
     ]
     if config.NOTION_TOKEN:
         sources.append(NotionSource(token=config.NOTION_TOKEN))

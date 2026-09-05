@@ -6,6 +6,7 @@ pyobjc-framework-Cocoa
 pyobjc-framework-ApplicationServices
 pyobjc-framework-Quartz
 watchdog
+ocrmac
 fastapi
 uvicorn
 pywebview
