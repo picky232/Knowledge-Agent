@@ -2,6 +2,8 @@ import requests
 
 from domains.record.repositories.i_embedding_service import IEmbeddingService
 
+KEEP_ALIVE = "30m"
+
 
 class OllamaEmbeddingService(IEmbeddingService):
     def __init__(self, host: str, model: str):
@@ -11,7 +13,7 @@ class OllamaEmbeddingService(IEmbeddingService):
     def embed(self, texts: list) -> list:
         resp = requests.post(
             f"{self.host}/api/embed",
-            json={"model": self.model, "input": texts},
+            json={"model": self.model, "input": texts, "keep_alive": KEEP_ALIVE},
             timeout=120,
         )
         resp.raise_for_status()

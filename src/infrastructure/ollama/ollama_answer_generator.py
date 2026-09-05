@@ -17,6 +17,8 @@ PROMPT_TEMPLATE = """당신은 사용자의 개인 기록(대화, GitHub, Notion
 - 핵심 내용을 간결하게 답하고, 어느 자료에서 나온 내용인지 자연스럽게 언급하세요.
 """
 
+KEEP_ALIVE = "30m"
+
 CONTINUATION_SUFFIX = """
 
 [지금까지 생성한 내용]
@@ -53,6 +55,7 @@ class OllamaAnswerGenerator(IAnswerGenerator):
                 "prompt": prompt,
                 "think": False,
                 "stream": False,
+                "keep_alive": KEEP_ALIVE,
             },
             timeout=180,
         )
@@ -92,6 +95,7 @@ class OllamaAnswerGenerator(IAnswerGenerator):
                 "prompt": prompt,
                 "think": think,
                 "stream": True,
+                "keep_alive": KEEP_ALIVE,
             },
             timeout=180,
             stream=True,

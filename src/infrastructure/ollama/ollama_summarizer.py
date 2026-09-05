@@ -30,6 +30,7 @@ class OllamaSummarizer(IDocumentSummarizer):
                 "prompt": prompt,
                 "think": False,
                 "stream": False,
+                "keep_alive": "30m",
             },
             timeout=120,
         )
