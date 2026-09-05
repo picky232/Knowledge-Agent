@@ -7,3 +7,4 @@ data/*.jsonl
 data/partial_answers/
 data/index/
 logs/
+.DS_Store
