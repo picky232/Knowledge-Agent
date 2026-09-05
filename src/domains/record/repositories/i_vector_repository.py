@@ -25,3 +25,9 @@ class IVectorRepository(ABC):
     def get_project_content(self, source: str, project: str, max_chars: int) -> str:
         """해당 프로젝트에 속한 청크 content를 이어붙인 텍스트 — 요약 인풋"""
         raise NotImplementedError
+
+    @abstractmethod
+    def search_within_date(self, query_embedding: list, date_from, date_to, top_k: int) -> list:
+        """updated_at이 [date_from, date_to) 구간인 청크만 대상으로 유사도 검색.
+        구간 내 결과가 없으면 빈 리스트 반환 — 호출부가 search()로 폴백해야 함."""
+        raise NotImplementedError

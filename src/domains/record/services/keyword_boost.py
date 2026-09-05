@@ -1,6 +1,17 @@
 import re
 
 TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣]{2,}")
+EPISODIC_SOURCES = {"conversation", "browser_history", "websearch"}
+
+
+def prioritize_episodic_sources(chunks: list) -> list:
+    """"언제/어제" 같은 날짜 의도가 감지된 질의에서만 사용.
+    시점 있는 사건형 소스(대화·방문기록·웹서칭)를 시점 무관 지식 소스(노션 등)보다
+    앞세운다 — 날짜로 좁혀도 코사인 유사도만으로는 여전히 긴 노션 문서가 이김."""
+    episodic, other = [], []
+    for chunk in chunks:
+        (episodic if chunk.source in EPISODIC_SOURCES else other).append(chunk)
+    return episodic + other
 
 
 def _tokenize(text: str) -> set:

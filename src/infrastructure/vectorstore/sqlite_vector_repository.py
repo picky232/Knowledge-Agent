@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from datetime import datetime
 
 import numpy as np
 
@@ -90,7 +91,27 @@ class SqliteVectorRepository(IVectorRepository):
             "SELECT id, document_id, source, project, title, url, content, created_at, updated_at, embedding FROM chunks"
         ).fetchall()
         conn.close()
+        return self._rank_rows(rows, query_embedding, top_k)
 
+    def search_within_date(self, query_embedding: list, date_from, date_to, top_k: int) -> list:
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            "SELECT id, document_id, source, project, title, url, content, created_at, updated_at, embedding FROM chunks"
+        ).fetchall()
+        conn.close()
+
+        filtered = []
+        for row in rows:
+            try:
+                updated = datetime.fromisoformat(row[8].replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                continue
+            if date_from <= updated < date_to:
+                filtered.append(row)
+
+        return self._rank_rows(filtered, query_embedding, top_k)
+
+    def _rank_rows(self, rows: list, query_embedding: list, top_k: int) -> list:
         if not rows:
             return []
 
