@@ -5,6 +5,7 @@ from infrastructure.appfocus.app_focus_source import AppFocusSource
 from infrastructure.browserhistory.chrome_history_source import ChromeHistorySource
 from infrastructure.browserhistory.safari_history_source import SafariHistorySource
 from infrastructure.conversationlog.conversation_log_source import ConversationLogSource
+from infrastructure.fileactivity.file_activity_source import FileActivitySource
 from infrastructure.github.github_source import GithubSource
 from infrastructure.notion.notion_source import NotionSource
 from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
@@ -19,6 +20,7 @@ from infrastructure.windowtitle.window_title_source import WindowTitleSource
 WEBSEARCH_LOG_PATH = os.path.join(config.BASE_DIR, "data", "websearch.jsonl")
 APP_FOCUS_LOG_PATH = os.path.join(config.BASE_DIR, "data", "app_focus.jsonl")
 WINDOW_TITLE_LOG_PATH = os.path.join(config.BASE_DIR, "data", "window_title.jsonl")
+FILE_ACTIVITY_LOG_PATH = os.path.join(config.BASE_DIR, "data", "file_activity.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
 TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
 
@@ -32,6 +34,7 @@ def build_sources() -> list:
         SafariHistorySource(lookback_days=30),
         AppFocusSource(log_path=APP_FOCUS_LOG_PATH),
         WindowTitleSource(log_path=WINDOW_TITLE_LOG_PATH),
+        FileActivitySource(log_path=FILE_ACTIVITY_LOG_PATH),
     ]
     if config.NOTION_TOKEN:
         sources.append(NotionSource(token=config.NOTION_TOKEN))

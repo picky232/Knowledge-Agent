@@ -23,6 +23,7 @@
 - [x] 날짜인지 검색 — "어제"/"오늘" 같은 상대 날짜를 실제 날짜구간으로 해석해 그 안에서만 검색, 날짜 의도가 있으면 대화·방문기록·웹서칭 같은 사건형 소스를 노션 같은 지식형 소스보다 우선
 - [x] 앱 사용 타임라인(`AppFocusSource`) — macOS `NSWorkspace` 알림 기반, 권한 불필요. `kb watch-focus`로 상시 감시하거나 LaunchAgent(`scripts/com.knowledgeagent.appfocus.plist`)로 로그인 시 자동 실행
 - [x] 창 제목 타임라인(`WindowTitleSource`) — Accessibility API 기반(5초 폴링). **손쉬운 사용 권한 필요 — 아직 승인 안 함**, 승인 전까지는 로그가 안 쌓일 뿐 다른 기능엔 영향 없음(에러 격리)
+- [x] 파일 작업 기록(`FileActivitySource`) — FSEvents(watchdog) 기반, 권한 불필요. 홈 아래 작업 폴더를 감시하되 `node_modules`·`.git`·캐시·숨김파일은 제외하고 코드/문서 확장자만 기록, 같은 파일 5분 디바운스
 - [x] 대화기록 6000자 잘림 문제 수정 — 세션 전체를 앞부분만 자르지 않고 **날짜별로 문서를 분리**해 각각 넉넉한 한도(2만자)를 둠. 이 프로젝트를 만든 세션처럼 며칠에 걸친 긴 세션도 날짜별로 다 보존됨(48청크→154청크로 증가)
 
 ## 구조 (DDD 4계층)
@@ -43,6 +44,9 @@ src/
     vectorstore/          sqlite 저장 + 코사인 유사도 검색
     resume/                중단된 생성 상태 파일 저장(data/partial_answers/)
     browserhistory/         Chrome/Safari 히스토리 DB 직접 파싱(임시 복사 후 읽음, WAL 포함)
+    appfocus/               NSWorkspace 앱 전환 로그 → 날짜별 타임라인
+    windowtitle/            Accessibility API 창 제목 로그 → 날짜별 타임라인
+    fileactivity/           FSEvents 파일 작업 로그 → 날짜별 기록(노이즈 필터 포함)
     topicindex/             주제별 요약 md 파일 + 루트 INDEX.md 작성(data/index/)
   presentation/
     cli/                    답변/통계 포맷팅
@@ -64,6 +68,7 @@ kb index                             # 주제 요약 인덱스(INDEX.md) 열기
 kb web                               # 브라우저에서 채팅 화면 (http://127.0.0.1:8420)
 kb gui                               # 네이티브 창으로 채팅 화면 (pywebview)
 kb watch-focus                       # 앱 전환 감시 (foreground, Ctrl-C 종료)
+kb watch-files                       # 파일 작업 감시 (foreground, Ctrl-C 종료)
 ```
 
 venv 활성화나 `src/` 경로 이동 없이 `kb` 명령 하나로 다 됨(`bin/kb`가 내부적으로 처리). Ollama 앱은 메뉴바에서 실행 중이어야 함(Spotlight로 "Ollama" 검색해서 실행, 터미널 불필요).
@@ -74,6 +79,13 @@ cp scripts/com.knowledgeagent.appfocus.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist
 ```
 중지: `launchctl unload ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist`
+
+**파일 작업 상시 감시** (권한 불필요, 이미 설치·실행됨):
+```bash
+cp scripts/com.knowledgeagent.fileactivity.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.knowledgeagent.fileactivity.plist
+```
+같은 파일은 5분에 한 번만 기록하므로 저장 한 번에 로그가 수십 줄씩 쌓이지 않음.
 
 **창 제목 상시 감시** (손쉬운 사용 권한 먼저 필요):
 1. `kb watch-window` 한 번 실행 — 권한 없으면 안내 메시지 뜨고 종료
@@ -147,6 +159,7 @@ Ollama 기본 keep_alive가 짧아 서로를 메모리에서 밀어내며 매 �
 - [~] `dateparser`가 "지난주"/"최근" 같은 주 단위 이상 상대 날짜는 못 잡는 한계 — 보류(narrow edge case, 필요성 낮음)
 - [~] 한글-영문 제목 불일치(예: "정글미팅" → "Jungle Meeting" 매칭 안 됨) — 확인해보니 순수 임베딩 유사도로도 210위 밖이라 후보군 확장으론 해결 안 됨, 음역/발음매칭 엔진 필요. 공수 대비 효과 낮아 보류
 - [ ] Accessibility 권한 승인 — 시스템 설정에서 직접 해야 함, `WindowTitleSource` 활성화의 전제조건
-- [ ] 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고)
+- [x] 파일 작업 감시(`FileActivitySource`) — 권한 불필요, LaunchAgent로 상시 실행 중
+- [ ] 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고). Screen Recording 권한(GUI 승인) 필요
 
 리서치 배경과 상세 설계는 기획서 아티팩트 참고: [OS 활동 기억 에이전트 — 2단계 설계](https://claude.ai/code/artifact/1cd32129-746f-4dbf-b874-09541f969a1a)
