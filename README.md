@@ -126,8 +126,8 @@ cd src && python3 app/ask.py "질문 내용"
 - [x] `AppFocusSource` — macOS `NSWorkspace` 알림 기반 앱 전환 로그, 권한 불필요
 - [x] `WindowTitleSource` — Accessibility API, 코드는 완성(승인 대기)
 - [x] 대화기록 6000자 잘림 → 날짜별 문서 분리로 해결
-- [ ] `dateparser`가 "지난주"/"최근" 같은 주 단위 이상 상대 날짜는 못 잡는 한계 — 필요시 별도 규칙 추가
-- [ ] 한글-영문 제목 불일치(예: "정글미팅" 질의가 실제 제목 "Jungle Meeting"과 매칭 안 됨) — 키워드 부스트가 언어 간에는 안 통함
+- [~] `dateparser`가 "지난주"/"최근" 같은 주 단위 이상 상대 날짜는 못 잡는 한계 — 보류(narrow edge case, 필요성 낮음)
+- [~] 한글-영문 제목 불일치(예: "정글미팅" → "Jungle Meeting" 매칭 안 됨) — 확인해보니 순수 임베딩 유사도로도 210위 밖이라 후보군 확장으론 해결 안 됨, 음역/발음매칭 엔진 필요. 공수 대비 효과 낮아 보류
 - [ ] Accessibility 권한 승인 — 시스템 설정에서 직접 해야 함, `WindowTitleSource` 활성화의 전제조건
 - [ ] 화면 캡처(OCR→요약 후 원본 삭제) 소스 — 이벤트 기반으로, 상시캡처는 지양(Windows Recall 사례 참고)
 
