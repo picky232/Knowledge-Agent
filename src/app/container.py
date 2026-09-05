@@ -14,9 +14,11 @@ from infrastructure.resume.file_generation_state_store import FileGenerationStat
 from infrastructure.topicindex.markdown_index_writer import MarkdownIndexWriter
 from infrastructure.vectorstore.sqlite_vector_repository import SqliteVectorRepository
 from infrastructure.websearch.websearch_log_source import WebSearchLogSource
+from infrastructure.windowtitle.window_title_source import WindowTitleSource
 
 WEBSEARCH_LOG_PATH = os.path.join(config.BASE_DIR, "data", "websearch.jsonl")
 APP_FOCUS_LOG_PATH = os.path.join(config.BASE_DIR, "data", "app_focus.jsonl")
+WINDOW_TITLE_LOG_PATH = os.path.join(config.BASE_DIR, "data", "window_title.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
 TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
 
@@ -29,6 +31,7 @@ def build_sources() -> list:
         ChromeHistorySource(lookback_days=30),
         SafariHistorySource(lookback_days=30),
         AppFocusSource(log_path=APP_FOCUS_LOG_PATH),
+        WindowTitleSource(log_path=WINDOW_TITLE_LOG_PATH),
     ]
     if config.NOTION_TOKEN:
         sources.append(NotionSource(token=config.NOTION_TOKEN))

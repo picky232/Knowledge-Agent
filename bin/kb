@@ -39,6 +39,9 @@ case "${1:-}" in
   watch-focus)
     python3 app/watch_focus.py
     ;;
+  watch-window)
+    python3 app/watch_window.py
+    ;;
   *)
     cat <<'USAGE'
 사용법:
@@ -51,6 +54,7 @@ case "${1:-}" in
   kb web                   브라우저에서 채팅 화면 열기(로컬 서버)
   kb gui                   네이티브 창으로 채팅 화면 열기
   kb watch-focus           앱 전환 감시 데몬 실행(foreground, Ctrl-C로 종료)
+  kb watch-window          창 제목 감시 데몬 실행(손쉬운 사용 권한 필요, foreground)
 USAGE
     ;;
 esac

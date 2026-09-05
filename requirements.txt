@@ -3,6 +3,8 @@ python-dotenv
 numpy
 dateparser
 pyobjc-framework-Cocoa
+pyobjc-framework-ApplicationServices
+pyobjc-framework-Quartz
 fastapi
 uvicorn
 pywebview

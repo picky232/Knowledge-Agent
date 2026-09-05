@@ -22,6 +22,7 @@
 - [x] 브라우저 채팅 UI(`kb web`) + 네이티브 창(`kb gui`, pywebview) — SSE 스트리밍, 중단 후 이어쓰기 그대로 재사용
 - [x] 날짜인지 검색 — "어제"/"오늘" 같은 상대 날짜를 실제 날짜구간으로 해석해 그 안에서만 검색, 날짜 의도가 있으면 대화·방문기록·웹서칭 같은 사건형 소스를 노션 같은 지식형 소스보다 우선
 - [x] 앱 사용 타임라인(`AppFocusSource`) — macOS `NSWorkspace` 알림 기반, 권한 불필요. `kb watch-focus`로 상시 감시하거나 LaunchAgent(`scripts/com.knowledgeagent.appfocus.plist`)로 로그인 시 자동 실행
+- [x] 창 제목 타임라인(`WindowTitleSource`) — Accessibility API 기반(5초 폴링). **손쉬운 사용 권한 필요 — 아직 승인 안 함**, 승인 전까지는 로그가 안 쌓일 뿐 다른 기능엔 영향 없음(에러 격리)
 
 ## 구조 (DDD 4계층)
 
@@ -72,6 +73,15 @@ cp scripts/com.knowledgeagent.appfocus.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist
 ```
 중지: `launchctl unload ~/Library/LaunchAgents/com.knowledgeagent.appfocus.plist`
+
+**창 제목 상시 감시** (손쉬운 사용 권한 먼저 필요):
+1. `kb watch-window` 한 번 실행 — 권한 없으면 안내 메시지 뜨고 종료
+2. 시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용에서 터미널 앱(또는 python3) 추가
+3. 승인 후 상시 실행하려면:
+```bash
+cp scripts/com.knowledgeagent.windowtitle.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.knowledgeagent.windowtitle.plist
+```
 
 원본 명령어를 직접 쓰려면(디버깅 등):
 ```bash
