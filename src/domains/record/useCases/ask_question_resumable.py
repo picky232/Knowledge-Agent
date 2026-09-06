@@ -4,6 +4,7 @@ from domains.record.entities.generation_state import GenerationState
 from domains.record.entities.record import AnswerResult, DocumentChunk
 from domains.record.services.alias_recall import merge_alias_matches
 from domains.record.services.date_intent import detect_date_range
+from domains.record.services.source_quota import apply_source_quota
 from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title, prioritize_episodic_sources
 
 CANDIDATE_POOL_SIZE = 50
@@ -62,6 +63,7 @@ class AskQuestionResumableUseCase:
             candidates = merge_alias_matches(
                 self.vector_repository, query_embedding, question, candidates, self.top_k
             )
+            candidates = apply_source_quota(candidates)
             candidates = dedup_by_title(candidates)
             chunks = boost_by_keyword_overlap(question, candidates, self.top_k)
             state = GenerationState(

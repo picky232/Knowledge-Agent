@@ -38,3 +38,8 @@ class IVectorRepository(ABC):
         """updated_at이 [date_from, date_to) 구간인 청크만 대상으로 유사도 검색.
         구간 내 결과가 없으면 빈 리스트 반환 — 호출부가 search()로 폴백해야 함."""
         raise NotImplementedError
+
+    @abstractmethod
+    def list_activity(self) -> list:
+        """(source, title, updated_at) 튜플 전체 — 날짜별 일지 생성용"""
+        raise NotImplementedError

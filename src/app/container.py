@@ -4,9 +4,12 @@ from app import config
 from infrastructure.appfocus.app_focus_source import AppFocusSource
 from infrastructure.browserhistory.chrome_history_source import ChromeHistorySource
 from infrastructure.browserhistory.safari_history_source import SafariHistorySource
+from infrastructure.chatlog.chat_log_source import ChatLogSource
 from infrastructure.conversationlog.conversation_log_source import ConversationLogSource
 from infrastructure.fileactivity.file_activity_source import FileActivitySource
 from infrastructure.github.github_source import GithubSource
+from infrastructure.journal.journal_source import JournalSource
+from infrastructure.journal.markdown_journal_writer import MarkdownJournalWriter
 from infrastructure.notion.notion_source import NotionSource
 from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
 from infrastructure.ollama.ollama_embedding_service import OllamaEmbeddingService
@@ -25,6 +28,8 @@ FILE_ACTIVITY_LOG_PATH = os.path.join(config.BASE_DIR, "data", "file_activity.js
 SCREEN_TEXT_LOG_PATH = os.path.join(config.BASE_DIR, "data", "screen_text.jsonl")
 PARTIAL_ANSWERS_DIR = os.path.join(config.BASE_DIR, "data", "partial_answers")
 TOPIC_INDEX_DIR = os.path.join(config.BASE_DIR, "data", "index")
+JOURNAL_DIR = os.path.join(config.BASE_DIR, "data", "journal")
+CHAT_LOG_PATH = os.path.join(config.BASE_DIR, "data", "chat_log.jsonl")
 
 
 def build_sources() -> list:
@@ -38,6 +43,8 @@ def build_sources() -> list:
         WindowTitleSource(log_path=WINDOW_TITLE_LOG_PATH),
         FileActivitySource(log_path=FILE_ACTIVITY_LOG_PATH),
         ScreenTextSource(log_path=SCREEN_TEXT_LOG_PATH),
+        JournalSource(base_dir=JOURNAL_DIR),
+        ChatLogSource(log_path=CHAT_LOG_PATH),
     ]
     if config.NOTION_TOKEN:
         sources.append(NotionSource(token=config.NOTION_TOKEN))
@@ -69,3 +76,7 @@ def build_summarizer() -> OllamaSummarizer:
 
 def build_index_writer() -> MarkdownIndexWriter:
     return MarkdownIndexWriter(TOPIC_INDEX_DIR)
+
+
+def build_journal_writer() -> MarkdownJournalWriter:
+    return MarkdownJournalWriter(JOURNAL_DIR)

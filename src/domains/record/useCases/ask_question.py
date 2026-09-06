@@ -1,6 +1,7 @@
 from domains.record.entities.record import AnswerResult
 from domains.record.services.alias_recall import merge_alias_matches
 from domains.record.services.date_intent import detect_date_range
+from domains.record.services.source_quota import apply_source_quota
 from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title, prioritize_episodic_sources
 
 CANDIDATE_POOL_SIZE = 50
@@ -29,6 +30,7 @@ class AskQuestionUseCase:
         candidates = merge_alias_matches(
             self.vector_repository, query_embedding, question, candidates, top_k
         )
+        candidates = apply_source_quota(candidates)
         candidates = dedup_by_title(candidates)
         chunks = boost_by_keyword_overlap(question, candidates, top_k)
         answer = self.answer_generator.generate(question, chunks)

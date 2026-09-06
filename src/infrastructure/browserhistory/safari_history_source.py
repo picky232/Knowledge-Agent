@@ -25,7 +25,7 @@ def _safari_time_to_iso(mac_absolute_time: float) -> str:
 
 
 class SafariHistorySource(IDocumentSource):
-    def __init__(self, lookback_days: int = 30, max_entries: int = 500, db_path: str = None):
+    def __init__(self, lookback_days: int = 30, max_entries: int = 20000, db_path: str = None):
         self.lookback_days = lookback_days
         self.max_entries = max_entries
         self.db_path = db_path or os.path.expanduser("~/Library/Safari/History.db")

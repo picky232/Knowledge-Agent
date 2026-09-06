@@ -150,3 +150,11 @@ class SqliteVectorRepository(IVectorRepository):
             )
             for _, row in scored[:top_k]
         ]
+
+    def list_activity(self) -> list:
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            "SELECT DISTINCT source, title, updated_at FROM chunks WHERE updated_at != ''"
+        ).fetchall()
+        conn.close()
+        return rows
