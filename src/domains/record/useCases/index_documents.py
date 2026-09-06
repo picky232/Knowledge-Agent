@@ -3,6 +3,10 @@ import hashlib
 from domains.record.entities.record import DocumentChunk
 from domains.record.services.chunker import chunk_text
 
+# 일지는 하루치를 요약한 문서라 쪼개면 요약이 있는 앞부분과 목록이 서로 다른
+# 청크로 흩어진다. 그러면 검색에서 중간 토막만 뽑혀 정작 요약을 못 본다.
+WHOLE_DOCUMENT_SOURCES = {"journal"}
+
 
 class IndexDocumentsUseCase:
     def __init__(self, sources: list, embedding_service, vector_repository):
@@ -38,7 +42,10 @@ class IndexDocumentsUseCase:
 
     def _index_document(self, doc) -> int:
         self.vector_repository.delete_by_document(doc.source, doc.id)
-        pieces = chunk_text(doc.content)
+        if doc.source in WHOLE_DOCUMENT_SOURCES:
+            pieces = [doc.content] if doc.content.strip() else []
+        else:
+            pieces = chunk_text(doc.content)
         if not pieces:
             return 0
 

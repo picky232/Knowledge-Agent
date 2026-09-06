@@ -4,29 +4,26 @@ import requests
 
 from domains.record.repositories.i_answer_generator import IAnswerGenerator
 
-PROMPT_TEMPLATE = """당신은 사용자 본인의 기록(대화, 노션, GitHub, 브라우저 방문기록, 앱·파일 사용기록)을
-찾아주는 개인 비서입니다. 아래 자료는 사용자가 실제로 남긴 기록입니다.
+PROMPT_TEMPLATE = """사용자 본인의 기록을 찾아주는 비서다.
+첫 문장에 결론, 다음 줄에 근거. 2~3문장. 인사말·출처표기 없이.
+기록에 근거가 없으면 "기록에 없습니다"만 답한다.
 
-[사용자의 기록]
+[기록]
 {context}
 
-[질문]
-{question}
-
-[답변 규칙]
-- 첫 문장에 결론부터 말하세요. 서론이나 "알겠습니다" 같은 인사말 없이 바로 답합니다.
-- 그다음 줄에 근거가 되는 구체적 내용(무엇을, 언제, 어떻게)을 덧붙이세요.
-- 전체 2~4문장. 대화하듯 자연스러운 한국어로 씁니다.
-- 출처 표기(`[notion/...]` 같은 대괄호 표기나 "~자료에서 확인할 수 있습니다" 같은 문장)를 쓰지 마세요.
-  출처는 화면에 따로 표시되므로 답변 본문에는 넣지 않습니다.
-- 기록에 없으면 첫 문장에서 바로 "기록에 없습니다"라고 자르세요. 추측하거나 지어내지 마세요.
-"""
+질문: {question}
+답변:"""
 
 KEEP_ALIVE = "30m"
 
 # 답변은 2~4문장이면 충분한데, 드물게 모델이 멈추지 않고 계속 생성해 응답이
 # 수십 초로 늘어나는 경우가 있다. 정상 답변은 이 한도에 걸리지 않는다.
-MAX_ANSWER_TOKENS = 300
+MAX_ANSWER_TOKENS = 200
+
+# 프롬프트 입력 토큰이 응답 시간의 절반 이상을 차지해서(1,123토큰 처리에 6.6초)
+# 청크당 본문 길이를 제한한다. 700자에서 350자로 줄여도 답변 품질 차이는 없었다.
+MAX_CHUNK_CHARS = 500
+JOURNAL_SUMMARY_CHARS = 600
 
 CONTINUATION_SUFFIX = """
 
@@ -40,9 +37,19 @@ CONTINUATION_SUFFIX = """
 
 def _build_context(context_chunks: list) -> str:
     return "\n\n".join(
-        f"- [{c.source}/{c.project}] {c.title} ({c.updated_at})\n  {c.content}"
+        f"- [{c.source}] {c.title} ({c.updated_at[:10]})\n  {_body_of(c)}"
         for c in context_chunks
     )
+
+
+def _body_of(chunk) -> str:
+    """일지는 '요약 + 항목 나열' 구조라 요약까지만 넣어도 질문에 답할 수 있다.
+    전체를 넣으면 프롬프트가 커져 응답이 두 배 이상 느려진다."""
+    text = chunk.content
+    if chunk.source == "journal":
+        head = text.split("\n## ", 1)[0]
+        return head[:JOURNAL_SUMMARY_CHARS]
+    return text[:MAX_CHUNK_CHARS]
 
 
 class OllamaAnswerGenerator(IAnswerGenerator):

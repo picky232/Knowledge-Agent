@@ -40,6 +40,11 @@ class IVectorRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def search_source_within_date(self, query_embedding: list, source: str, date_from, date_to, top_k: int) -> list:
+        """특정 소스 안에서만 날짜 구간 검색 — 다른 소스에 밀리지 않게 따로 뽑을 때 쓴다."""
+        raise NotImplementedError
+
+    @abstractmethod
     def list_activity(self) -> list:
         """(source, title, updated_at) 튜플 전체 — 날짜별 일지 생성용"""
         raise NotImplementedError
