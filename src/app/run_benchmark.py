@@ -23,8 +23,19 @@ REPORT_PATH = os.path.join(config.BASE_DIR, "data", "benchmark_report.jsonl")
 
 def build_questions(n: int) -> list:
     conn = sqlite3.connect(config.DB_PATH)
-    rows = conn.execute("SELECT DISTINCT source, title FROM chunks").fetchall()
+    # 방문기록은 건수가 압도적이라 그대로 뽑으면 표본이 "구글 검색 결과 페이지"로
+    # 쏠린다. 그런 제목에 "뭐로 만들었어?"를 물으면 답이 없는 게 정답이라 측정이
+    # 무의미해지므로, 내용이 있는 소스 위주로 뽑고 방문기록은 소수만 섞는다.
+    rows = conn.execute(
+        """SELECT DISTINCT source, title FROM chunks
+           WHERE source NOT IN ('browser_history', 'app_focus', 'window_title')"""
+    ).fetchall()
+    shallow = conn.execute(
+        """SELECT DISTINCT source, title FROM chunks
+           WHERE source = 'browser_history' ORDER BY updated_at DESC LIMIT 40"""
+    ).fetchall()
     conn.close()
+    rows = rows + shallow
 
     if not rows:
         return []

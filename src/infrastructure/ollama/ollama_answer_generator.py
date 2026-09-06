@@ -24,6 +24,10 @@ PROMPT_TEMPLATE = """당신은 사용자 본인의 기록(대화, 노션, GitHub
 
 KEEP_ALIVE = "30m"
 
+# 답변은 2~4문장이면 충분한데, 드물게 모델이 멈추지 않고 계속 생성해 응답이
+# 수십 초로 늘어나는 경우가 있다. 정상 답변은 이 한도에 걸리지 않는다.
+MAX_ANSWER_TOKENS = 300
+
 CONTINUATION_SUFFIX = """
 
 [지금까지 생성한 내용]
@@ -61,6 +65,7 @@ class OllamaAnswerGenerator(IAnswerGenerator):
                 "think": False,
                 "stream": False,
                 "keep_alive": KEEP_ALIVE,
+                "options": {"num_predict": MAX_ANSWER_TOKENS},
             },
             timeout=180,
         )
@@ -101,6 +106,7 @@ class OllamaAnswerGenerator(IAnswerGenerator):
                 "think": think,
                 "stream": True,
                 "keep_alive": KEEP_ALIVE,
+                "options": {"num_predict": MAX_ANSWER_TOKENS},
             },
             timeout=180,
             stream=True,
