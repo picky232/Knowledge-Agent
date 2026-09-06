@@ -2,9 +2,9 @@
 .env
 __pycache__/
 *.pyc
-data/*.db
-data/*.jsonl
-data/partial_answers/
-data/index/
 logs/
 .DS_Store
+
+# data/ 아래는 전부 개인 기록이거나 생성물 — 통째로 제외한다.
+# (활동 일지, 방문기록 인덱스, 대화 로그, 학습용 모델 20GB 등)
+data/
