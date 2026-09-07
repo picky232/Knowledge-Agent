@@ -2,14 +2,7 @@ import hashlib
 
 from domains.record.entities.generation_state import GenerationState
 from domains.record.entities.record import AnswerResult, DocumentChunk
-from domains.record.services.alias_recall import merge_alias_matches
-from domains.record.services.date_intent import detect_date_range
-from domains.record.services.journal_recall import merge_journal_for_date
-from domains.record.services.title_recall import merge_title_matches
-from domains.record.services.source_quota import apply_source_quota
-from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title, prioritize_episodic_sources
-
-CANDIDATE_POOL_SIZE = 50
+from domains.record.services.retrieval_pipeline import CANDIDATE_POOL_SIZE, retrieve
 
 
 def make_key(question: str) -> str:
@@ -49,29 +42,10 @@ class AskQuestionResumableUseCase:
         if state and not state.done:
             chunks = [_dict_to_chunk(c) for c in state.citations]
         else:
-            query_embedding = self.embedding_service.embed([question])[0]
-
-            date_range = detect_date_range(question)
-            candidates = []
-            used_date_filter = False
-            if date_range:
-                candidates = self.vector_repository.search_within_date(query_embedding, *date_range, CANDIDATE_POOL_SIZE)
-                used_date_filter = bool(candidates)
-            if not candidates:
-                candidates = self.vector_repository.search(query_embedding, max(self.top_k, CANDIDATE_POOL_SIZE))
-
-            if used_date_filter:
-                candidates = prioritize_episodic_sources(candidates)
-            candidates = merge_alias_matches(
-                self.vector_repository, query_embedding, question, candidates, self.top_k
+            chunks = retrieve(
+                self.vector_repository, self.embedding_service, question,
+                self.top_k, CANDIDATE_POOL_SIZE,
             )
-            candidates = merge_title_matches(
-                self.vector_repository, query_embedding, question, candidates, self.top_k
-            )
-            candidates = merge_journal_for_date(self.vector_repository, query_embedding, date_range, candidates)
-            candidates = apply_source_quota(candidates)
-            candidates = dedup_by_title(candidates)
-            chunks = boost_by_keyword_overlap(question, candidates, self.top_k)
             state = GenerationState(
                 key=key, question=question, stage="answering",
                 citations=[_chunk_to_dict(c) for c in chunks],

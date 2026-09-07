@@ -62,7 +62,10 @@ def ask_stream(question: str):
         def worker():
             try:
                 q.put(("searching", None))
-                result = use_case.run(question, think=True, on_answer=on_answer)
+                # 추론은 끈다. on_thinking을 넘기지 않으므로 추론 토큰은 화면에
+                # 닿지도 못하고 버려지는데, 그 사이 사용자는 첫 글자를 기다린다.
+                # 답변 자체는 근거 조각을 그대로 요약하는 일이라 추론이 필요 없다.
+                result = use_case.run(question, think=False, on_answer=on_answer)
                 q.put(("done", result))
             except Exception as e:
                 q.put(("error", str(e)))
