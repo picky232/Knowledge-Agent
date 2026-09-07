@@ -37,6 +37,10 @@ case "${1:-}" in
     shift
     python3 app/measure_chat.py "$@"
     ;;
+  prompt-size)
+    shift
+    python3 app/measure_prompt_size.py "$@"
+    ;;
   index)
     "$EDITOR" "$DIR/data/index/INDEX.md" 2>/dev/null || open "$DIR/data/index/INDEX.md"
     ;;
@@ -74,6 +78,7 @@ case "${1:-}" in
   kb measure [개수]         응답 시간·정확도 측정(생성 속도 기준 미달이면 중단)
   kb compare A B [개수]     두 모델을 같은 질문으로 비교(예: kb compare qwen3:8b qwen3:4b)
   kb measure-chat [개수]    채팅창 체감 지연(첫 글자까지) 측정, --think로 추론 켜고 비교
+  kb prompt-size [개수]     근거 조각 수별 프롬프트 토큰 수 (느린 환경에서도 몇 초면 끝남)
   kb index                 주제 요약 인덱스(INDEX.md) 열기
   kb web                   브라우저에서 채팅 화면 열기(로컬 서버)
   kb gui                   네이티브 창으로 채팅 화면 열기

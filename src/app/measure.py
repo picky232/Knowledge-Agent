@@ -82,6 +82,15 @@ def load_questions(argv: list) -> list:
     return build_questions(count)
 
 
+def parse_top_k(argv: list) -> int:
+    """--top-k N. 프롬프트에 넣을 근거 조각 수 — 첫 글자까지의 시간이 여기 달렸다."""
+    if "--top-k" in argv:
+        index = argv.index("--top-k")
+        if index + 1 < len(argv):
+            return int(argv[index + 1])
+    return 5
+
+
 def main():
     # 거부율과 토큰 수는 생성 속도와 무관하므로, 환경이 느려도 정확도는 잴 수 있다.
     # 이 모드에서 나온 응답 시간은 보고하지 않는다.
@@ -99,7 +108,9 @@ def main():
     if accuracy_only:
         print("정확도 측정 모드 — 응답 시간은 참고용으로만 기록합니다.\n")
 
-    questions = load_questions([a for a in sys.argv if a != "--accuracy-only"])
+    top_k = parse_top_k(sys.argv)
+    skip = {"--accuracy-only", "--top-k", str(top_k)}
+    questions = load_questions([a for a in sys.argv if a not in skip])
     if not questions:
         print("질문을 만들 데이터가 없습니다. 먼저 sync.py를 실행하세요.")
         sys.exit(1)
@@ -113,14 +124,14 @@ def main():
 
     total = len(questions)
     records = []
-    print(f"\n{total}개 질문 측정 시작\n")
+    print(f"\n{total}개 질문 측정 시작 (근거 {top_k}개)\n")
 
     with open(REPORT_PATH, "w", encoding="utf-8") as fh:
         for i, item in enumerate(questions, 1):
             start = time.time()
             answer, error = "", None
             try:
-                result = use_case.run(item["question"])
+                result = use_case.run(item["question"], top_k)
                 answer = result.answer
             except Exception as exc:
                 error = str(exc)
