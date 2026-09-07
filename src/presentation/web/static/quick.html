@@ -123,6 +123,19 @@ function renderCites(wrap, citations) {
   wrap.appendChild(box);
 }
 
+// 답을 평문으로 그리므로 모델이 쓴 마크다운 기호를 지운다. 프롬프트로
+// 줄글을 요청해도 작은 모델은 굵은 글씨와 불릿을 섞어 쓰고, 그러면 화면에
+// 별표가 그대로 보인다. 목록 기호는 가운뎃점으로 바꿔 문장 흐름을 살린다.
+function plain(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(^|\s)\*(?!\s)(.+?)\*/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '· ')
+    .replace(/^\s*\d+\.\s+/gm, '· ');
+}
+
 input.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   const question = input.value.trim();
@@ -146,6 +159,7 @@ input.addEventListener('keydown', (e) => {
   log.scrollTop = log.scrollHeight;
 
   const show = () => { status.remove(); a.style.display = ''; };
+  let raw = '';
   const es = new EventSource(`/api/ask-stream?question=${encodeURIComponent(question)}`);
   es.onmessage = (ev) => {
     const d = JSON.parse(ev.data);
@@ -153,7 +167,11 @@ input.addEventListener('keydown', (e) => {
     else if (d.type === 'generating') status.textContent = '생각 중';
     else if (d.type === 'token') {
       if (status.isConnected) show();
-      a.textContent += d.text;
+      // 받은 글자를 따로 모아두고 매번 다시 그린다. 이어붙이기만 하면
+      // 별표가 화면에 그대로 남는데, 반쪽짜리 "**"는 다음 토큰이 와야
+      // 마크다운인지 알 수 있어서 조각마다 지울 수가 없다.
+      raw += d.text;
+      a.textContent = plain(raw);
       log.scrollTop = log.scrollHeight;
     } else if (d.type === 'done') {
       show();

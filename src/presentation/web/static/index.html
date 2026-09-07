@@ -128,6 +128,19 @@ const form = document.getElementById('form');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 
+// 답을 평문으로 그리므로 모델이 쓴 마크다운 기호를 지운다. 프롬프트로
+// 줄글을 요청해도 작은 모델은 굵은 글씨와 불릿을 섞어 쓰고, 그러면 화면에
+// 별표가 그대로 보인다. 목록 기호는 가운뎃점으로 바꿔 문장 흐름을 살린다.
+function plain(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(^|\s)\*(?!\s)(.+?)\*/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '· ')
+    .replace(/^\s*\d+\.\s+/gm, '· ');
+}
+
 function addMsg(role, text) {
   const wrap = document.createElement('div');
   wrap.className = `msg ${role}`;
@@ -202,6 +215,7 @@ form.addEventListener('submit', (e) => {
     bubble.style.display = '';
   };
 
+  let raw = '';
   const es = new EventSource(`/api/ask-stream?question=${encodeURIComponent(question)}`);
   es.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -211,7 +225,10 @@ form.addEventListener('submit', (e) => {
       status.textContent = '생각 중…';
     } else if (data.type === 'token') {
       if (status.isConnected) showAnswer();
-      bubble.textContent += data.text;
+      // 받은 글자를 모아 매번 다시 그린다. 반쪽짜리 "**"는 다음 토큰이 와야
+      // 마크다운인지 알 수 있어서 조각 단위로는 지울 수 없다.
+      raw += data.text;
+      bubble.textContent = plain(raw);
       log.scrollTop = log.scrollHeight;
     } else if (data.type === 'done') {
       showAnswer();
