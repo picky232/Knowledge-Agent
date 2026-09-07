@@ -162,6 +162,12 @@ def print_summary(records: list, throughput: float, accuracy_only: bool = False)
         print(f"4초 이내: {sum(1 for t in times if t <= 4.0)}/{len(times)}건")
     print(f"입력 토큰 평균 {mean([r.get('prompt_tokens', 0) for r in ok])}")
     print(f"출력 토큰 평균 {mean([r.get('output_tokens', 0) for r in ok])}")
+
+    # 시간이 어디서 나가는지 나눠 본다. 어디를 줄여야 하는지가 여기서 갈린다.
+    prompt_sec = mean([r.get("prompt_sec", 0) for r in ok])
+    generate_sec = mean([r.get("generate_sec", 0) for r in ok])
+    retrieval_sec = round(mean(times) - prompt_sec - generate_sec, 2)
+    print(f"내역  검색·임베딩 {retrieval_sec}s | 프롬프트 처리 {prompt_sec}s | 생성 {generate_sec}s")
     print(f"상세: {REPORT_PATH}")
 
 

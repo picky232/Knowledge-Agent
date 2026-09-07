@@ -1,6 +1,7 @@
 import re
 
 from domains.record.services.term_aliases import expand_terms
+from domains.record.services.title_recall import QUESTION_WORDS
 
 TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣]{2,}")
 EPISODIC_SOURCES = {
@@ -49,7 +50,11 @@ def boost_by_keyword_overlap(question: str, chunks: list, top_k: int) -> list:
     """벡터 유사도 순위(입력 순서)는 유지하되, 질문 키워드가 제목에 그대로
     등장하는 청크를 앞으로 당겨준다. 짧은 텍스트(제목류)에 대한
     임베딩 코사인 점수가 구조적으로 낮게 나오는 것을 보완."""
-    keywords = expand_terms(_tokenize(question))
+    # 질문을 이루는 말은 키워드에서 뺀다. 넣어두면 어떤 문서를 가리키지도 않는
+    # 말이 엉뚱한 제목과 맞아 1순위를 가져간다. "웹디자인에서 무슨 작업했어?"에서
+    # 검색은 노션 "웹디자인"을 1순위로 뽑아놨는데, 여기서 "무슨"이
+    # "진 그레이가 피터에게 무슨 짓을 했을까? - YouTube"와 맞아 순위를 빼앗았다.
+    keywords = expand_terms(_tokenize(question) - QUESTION_WORDS)
     if not keywords:
         return chunks[:top_k]
 
