@@ -2,6 +2,7 @@ from domains.record.entities.record import AnswerResult
 from domains.record.services.alias_recall import merge_alias_matches
 from domains.record.services.date_intent import detect_date_range
 from domains.record.services.journal_recall import merge_journal_for_date
+from domains.record.services.title_recall import merge_title_matches
 from domains.record.services.source_quota import apply_source_quota
 from domains.record.services.keyword_boost import boost_by_keyword_overlap, dedup_by_title, prioritize_episodic_sources
 
@@ -29,6 +30,9 @@ class AskQuestionUseCase:
         if used_date_filter:
             candidates = prioritize_episodic_sources(candidates)
         candidates = merge_alias_matches(
+            self.vector_repository, query_embedding, question, candidates, top_k
+        )
+        candidates = merge_title_matches(
             self.vector_repository, query_embedding, question, candidates, top_k
         )
         candidates = merge_journal_for_date(self.vector_repository, query_embedding, date_range, candidates)

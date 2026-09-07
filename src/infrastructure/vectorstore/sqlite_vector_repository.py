@@ -114,7 +114,9 @@ class SqliteVectorRepository(IVectorRepository):
             return []
 
         conditions = " OR ".join(["lower(title) LIKE ?"] * len(keywords))
-        params = [f"%{k.lower()}%" for k in keywords]
+        # 구 안의 공백은 와일드카드로 바꾼다 — "index jsp"가 실제 제목 "index.jsp"와
+        # 맞도록. 토큰화 과정에서 구두점이 공백이 되기 때문이다.
+        params = [f"%{k.lower().replace(' ', '%')}%" for k in keywords]
         conn = sqlite3.connect(self.db_path)
         rows = conn.execute(
             "SELECT id, document_id, source, project, title, url, content, "
