@@ -41,7 +41,15 @@ REFUSAL_MARKERS = ("기록에 없습니다", "찾지 못했습니다", "기록�
 
 
 def is_refusal(answer: str) -> bool:
-    return any(marker in answer for marker in REFUSAL_MARKERS)
+    """첫 문장만 본다.
+
+    답 전체에서 문구를 찾으면 제대로 답하고도 거부로 세어진다. 실제로 모델이
+    LifeFivePhoto를 정확히 요약한 뒤 프롬프트의 지시문("기록에 근거가 없으면
+    ...")을 그대로 덧붙여 거부로 집계됐다. 프롬프트가 첫 문장에 결론을 쓰라고
+    지시하므로, 진짜 거부는 첫 문장이 곧 거부문이다.
+    """
+    first = answer.strip().replace("\n", ". ").split(". ", 1)[0]
+    return any(marker in first for marker in REFUSAL_MARKERS)
 
 
 def render_bar(done: int, total: int, width: int = 30) -> str:
