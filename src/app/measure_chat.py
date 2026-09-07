@@ -61,19 +61,27 @@ def measure_one(use_case, state_store, question: str, think: bool) -> dict:
     }
 
 
-def parse_model(argv: list) -> str:
-    """--model NAME 이 있으면 그 모델로, 없으면 설정된 답변 모델로."""
-    if "--model" in argv:
-        index = argv.index("--model")
+def parse_option(argv: list, name: str, default):
+    """--name VALUE 를 읽는다. 없으면 기본값."""
+    if name in argv:
+        index = argv.index(name)
         if index + 1 < len(argv):
             return argv[index + 1]
-    return config.ANSWER_MODEL
+    return default
+
+
+def parse_model(argv: list) -> str:
+    """--model NAME 이 있으면 그 모델로, 없으면 설정된 답변 모델로."""
+    return parse_option(argv, "--model", config.ANSWER_MODEL)
 
 
 def main():
     think = "--think" in sys.argv
     model = parse_model(sys.argv)
-    skip = {"--model", model}
+    # 첫 글자까지의 시간은 거의 전부 프롬프트를 읽는 시간이라, 근거 조각 수가
+    # 곧 체감 지연이다. 몇 개까지 줄여도 답을 찾는지 재보려고 열어둔다.
+    top_k = int(parse_option(sys.argv, "--top-k", 5))
+    skip = {"--model", model, "--top-k", str(top_k)}
     args = [a for a in sys.argv[1:] if not a.startswith("-") and a not in skip]
     count = int(args[0]) if args else 10
 
@@ -92,9 +100,11 @@ def main():
         vector_repository=container.build_vector_repository(),
         answer_generator=OllamaAnswerGenerator(config.OLLAMA_HOST, model),
         state_store=state_store,
+        top_k=top_k,
     )
 
-    print(f"\n채팅 경로 {len(questions)}건 측정 — {model} (추론 {'켬' if think else '끔'})\n")
+    print(f"\n채팅 경로 {len(questions)}건 측정 — {model} "
+          f"(추론 {'켬' if think else '끔'}, 근거 {top_k}개)\n")
     records = []
     with open(REPORT_PATH, "w", encoding="utf-8") as fh:
         for i, item in enumerate(questions, 1):
