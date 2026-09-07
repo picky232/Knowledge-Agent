@@ -8,7 +8,10 @@
 저전력 상태에서도 몇 초 만에 조각 수별 토큰 수를 정확히 비교할 수 있다.
 
 사용법:
-    python3 app/measure_prompt_size.py [질문수] [조각수,조각수,...]
+    python3 app/measure_prompt_size.py [질문수] [조각수,조각수,...] [--model 이름]
+
+토크나이저가 달라도 조각 수에 따른 감소율은 거의 같으므로, 느린 환경에서는
+작은 모델로 재는 편이 빠르다.
 """
 
 import os
@@ -44,10 +47,16 @@ def prompt_tokens(model: str, prompt: str) -> int:
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    model = config.ANSWER_MODEL
+    if "--model" in sys.argv:
+        index = sys.argv.index("--model")
+        if index + 1 < len(sys.argv):
+            model = sys.argv[index + 1]
+
+    skip = {"--model", model}
+    args = [a for a in sys.argv[1:] if not a.startswith("-") and a not in skip]
     count = int(args[0]) if args else 12
     sizes = [int(s) for s in args[1].split(",")] if len(args) > 1 else [5, 4, 3, 2]
-    model = config.ANSWER_MODEL
 
     questions = build_questions(count)
     if not questions:
