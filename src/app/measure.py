@@ -17,6 +17,7 @@ run_benchmark.py는 벽시계 시간만 기록해서, 메모리가 스왑에 눌
 
 import json
 import os
+import re
 import sys
 import time
 
@@ -36,14 +37,18 @@ REPORT_PATH = os.path.join(config.BASE_DIR, "data", "latency_report.jsonl")
 # 정상 상태에서 17 tok/s, 스왑 8.7GB 상태에서 4.4 tok/s가 나왔다.
 MIN_THROUGHPUT = 12.0
 
-# 근거를 못 찾았을 때 모델이 내놓는 말들. 정확도는 이 비율로 본다.
-# 프롬프트는 "기록에 없습니다"만 쓰라고 지시하지만 모델마다 표현이 갈린다.
-# exaone3.5는 "기록에 근거가 없습니다"라고 답해 목록에 없어서 답변으로 세어졌다.
-# 모델을 바꿔 비교할 때는 이 목록만 믿지 말고 답변을 직접 읽어야 한다 —
-# 작은 모델은 근거가 없는 자리에서 거부하는 대신 지어내기도 한다.
-REFUSAL_MARKERS = (
-    "기록에 없습니다", "찾지 못했습니다", "기록이 없습니다", "관련 기록은 없습니다",
-    "근거가 없습니다", "기록에 없음", "정보가 없습니다", "확인할 수 없습니다",
+# 근거를 못 찾았을 때 나오는 말. 정확도는 이 비율로 본다.
+#
+# 처음에는 문구를 나열했는데 계속 샜다. 프롬프트가 "기록에 없습니다"만 쓰라고
+# 지시해도 모델은 "기록에 근거가 없습니다", "피키 관련한 기록은 없습니다"처럼
+# 조사를 바꿔 쓰고, 그때마다 거부가 답변으로 세어져 없던 회귀가 보였다.
+# 그래서 "기록/근거/정보/내용" 뒤에 곧 "없다"가 오는 꼴을 통째로 잡는다.
+#
+# 그래도 이 검사만 믿고 모델을 고르면 안 된다 — 작은 모델은 근거가 없는 자리에서
+# 거부하는 대신 지어내기도 하고, 그건 이 검사에 성공으로 잡힌다.
+REFUSAL_PATTERN = re.compile(
+    r"(기록|근거|정보|내용|자료)\S*\s*(?:\S+\s*){0,2}?(없습니다|없음|없다|없어|"
+    r"찾지 못|찾을 수 없|확인할 수 없|포함되어 있지 않)"
 )
 
 
@@ -56,7 +61,7 @@ def is_refusal(answer: str) -> bool:
     지시하므로, 진짜 거부는 첫 문장이 곧 거부문이다.
     """
     first = answer.strip().replace("\n", ". ").split(". ", 1)[0]
-    return any(marker in first for marker in REFUSAL_MARKERS)
+    return bool(REFUSAL_PATTERN.search(first))
 
 
 def render_bar(done: int, total: int, width: int = 30) -> str:
