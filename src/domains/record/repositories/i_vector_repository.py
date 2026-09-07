@@ -48,3 +48,8 @@ class IVectorRepository(ABC):
     def list_activity(self) -> list:
         """(source, title, updated_at) 튜플 전체 — 날짜별 일지 생성용"""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_document_head(self, source: str, document_id: str) -> object:
+        """문서의 첫 조각. 없으면 None."""
+        raise NotImplementedError

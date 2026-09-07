@@ -196,3 +196,25 @@ class SqliteVectorRepository(IVectorRepository):
         ).fetchall()
         conn.close()
         return rows
+
+    def get_document_head(self, source: str, document_id: str):
+        """한 문서의 첫 조각을 돌려준다.
+
+        조각 id는 해시라 순번이 남아있지 않지만, 한 문서의 조각들은 색인할 때
+        앞에서부터 차례로 한 번에 넣으므로 rowid 순서가 곧 문서 순서다.
+        """
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT id, document_id, source, project, title, url, content, "
+            "created_at, updated_at FROM chunks "
+            "WHERE source = ? AND document_id = ? ORDER BY rowid LIMIT 1",
+            (source, document_id),
+        ).fetchone()
+        conn.close()
+        if not row:
+            return None
+        return DocumentChunk(
+            id=row[0], document_id=row[1], source=row[2], project=row[3],
+            title=row[4], url=row[5], content=row[6],
+            created_at=row[7], updated_at=row[8], embedding=None,
+        )
