@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import config, container
 from app.measure import MIN_THROUGHPUT, is_refusal, render_bar
 from app.run_benchmark import build_questions
+from domains.record.services.retrieval_pipeline import DEFAULT_TOP_K
 from domains.record.useCases.ask_question_resumable import AskQuestionResumableUseCase, make_key
 from infrastructure.ollama.instrumented_answer_generator import measure_throughput
 from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
@@ -80,7 +81,9 @@ def main():
     model = parse_model(sys.argv)
     # 첫 글자까지의 시간은 거의 전부 프롬프트를 읽는 시간이라, 근거 조각 수가
     # 곧 체감 지연이다. 몇 개까지 줄여도 답을 찾는지 재보려고 열어둔다.
-    top_k = int(parse_option(sys.argv, "--top-k", 5))
+    # 기본값은 실제로 쓰이는 값과 같아야 한다 — 여기에 5를 박아두는 바람에
+    # 배포 설정이 3개인데 5개로 재는 측정을 한 번 돌렸다.
+    top_k = int(parse_option(sys.argv, "--top-k", DEFAULT_TOP_K))
     skip = {"--model", model, "--top-k", str(top_k)}
     args = [a for a in sys.argv[1:] if not a.startswith("-") and a not in skip]
     count = int(args[0]) if args else 10
