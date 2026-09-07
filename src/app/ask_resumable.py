@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import container
+from domains.record.services.retrieval_pipeline import DEFAULT_TOP_K
 from domains.record.useCases.ask_question_resumable import AskQuestionResumableUseCase, make_key
 
 
@@ -24,6 +25,7 @@ def main():
         vector_repository=container.build_vector_repository(),
         answer_generator=container.build_answer_generator(),
         state_store=state_store,
+        top_k=DEFAULT_TOP_K,
     )
 
     def on_answer(delta: str):

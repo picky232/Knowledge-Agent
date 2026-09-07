@@ -21,6 +21,13 @@ from domains.record.services.title_recall import merge_title_matches
 
 CANDIDATE_POOL_SIZE = 50
 
+# 프롬프트에 넣을 근거 조각 수. 첫 글자가 뜰 때까지 걸리는 시간이 거의 전부
+# 프롬프트를 읽는 시간이라, 이 숫자가 곧 체감 지연이다. 5개면 평균 816토큰,
+# 3개면 556토큰이고, 같은 30문항에서 답변 거부는 2건에서 1건으로 오히려 줄었다.
+# 제목이 맞는 문서를 그 앞부분과 함께 1순위로 세우게 된 뒤로 답에 필요한 근거가
+# 앞쪽에 모여서, 뒤 두 개는 대개 답과 상관없는 꼬리였다.
+DEFAULT_TOP_K = 3
+
 
 def retrieve(vector_repository, embedding_service, question: str, top_k: int,
              pool_size: int = CANDIDATE_POOL_SIZE) -> list:

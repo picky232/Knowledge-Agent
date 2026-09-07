@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import container
+from domains.record.services.retrieval_pipeline import DEFAULT_TOP_K
 from domains.record.useCases.ask_question import AskQuestionUseCase
 from presentation.cli.formatter import format_answer
 
@@ -19,7 +20,7 @@ def main():
         vector_repository=container.build_vector_repository(),
         answer_generator=container.build_answer_generator(),
     )
-    result = use_case.run(question)
+    result = use_case.run(question, DEFAULT_TOP_K)
     print(format_answer(result))
 
 

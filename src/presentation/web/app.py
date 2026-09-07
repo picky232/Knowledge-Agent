@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import container
+from domains.record.services.retrieval_pipeline import DEFAULT_TOP_K
 from domains.record.useCases.ask_question_resumable import AskQuestionResumableUseCase
 from infrastructure.chatlog.chat_log_source import append_turn
 
@@ -47,6 +48,7 @@ def ask_stream(question: str):
         vector_repository=container.build_vector_repository(),
         answer_generator=container.build_answer_generator(),
         state_store=container.build_generation_state_store(),
+        top_k=DEFAULT_TOP_K,
     )
 
     def event_gen():
