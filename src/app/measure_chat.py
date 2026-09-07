@@ -11,7 +11,8 @@
 
 사용법:
     python3 app/measure_chat.py [질문수]
-    python3 app/measure_chat.py 10 --think    # 추론 켠 상태로 측정
+    python3 app/measure_chat.py 10 --think            # 추론 켠 상태로 측정
+    python3 app/measure_chat.py 10 --model gemma3:4b  # 다른 모델로 같은 조건 비교
 """
 
 import json
@@ -26,6 +27,7 @@ from app.measure import MIN_THROUGHPUT, is_refusal, render_bar
 from app.run_benchmark import build_questions
 from domains.record.useCases.ask_question_resumable import AskQuestionResumableUseCase, make_key
 from infrastructure.ollama.instrumented_answer_generator import measure_throughput
+from infrastructure.ollama.ollama_answer_generator import OllamaAnswerGenerator
 
 REPORT_PATH = os.path.join(config.BASE_DIR, "data", "chat_latency_report.jsonl")
 
@@ -59,12 +61,23 @@ def measure_one(use_case, state_store, question: str, think: bool) -> dict:
     }
 
 
+def parse_model(argv: list) -> str:
+    """--model NAME 이 있으면 그 모델로, 없으면 설정된 답변 모델로."""
+    if "--model" in argv:
+        index = argv.index("--model")
+        if index + 1 < len(argv):
+            return argv[index + 1]
+    return config.ANSWER_MODEL
+
+
 def main():
     think = "--think" in sys.argv
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    model = parse_model(sys.argv)
+    skip = {"--model", model}
+    args = [a for a in sys.argv[1:] if not a.startswith("-") and a not in skip]
     count = int(args[0]) if args else 10
 
-    throughput = measure_throughput(config.OLLAMA_HOST, config.ANSWER_MODEL)
+    throughput = measure_throughput(config.OLLAMA_HOST, model)
     print(f"생성 속도 {throughput} tok/s", end="")
     print(" — 측정 가능" if throughput >= MIN_THROUGHPUT else f" — 기준 {MIN_THROUGHPUT} 미만, 참고용")
 
@@ -77,11 +90,11 @@ def main():
     use_case = AskQuestionResumableUseCase(
         embedding_service=container.build_embedding_service(),
         vector_repository=container.build_vector_repository(),
-        answer_generator=container.build_answer_generator(),
+        answer_generator=OllamaAnswerGenerator(config.OLLAMA_HOST, model),
         state_store=state_store,
     )
 
-    print(f"\n채팅 경로 {len(questions)}건 측정 (추론 {'켬' if think else '끔'})\n")
+    print(f"\n채팅 경로 {len(questions)}건 측정 — {model} (추론 {'켬' if think else '끔'})\n")
     records = []
     with open(REPORT_PATH, "w", encoding="utf-8") as fh:
         for i, item in enumerate(questions, 1):
@@ -96,10 +109,10 @@ def main():
                 flush=True,
             )
 
-    print_summary(records, throughput, think)
+    print_summary(records, throughput, think, model)
 
 
-def print_summary(records: list, throughput: float, think: bool):
+def print_summary(records: list, throughput: float, think: bool, model: str = ""):
     ok = [r for r in records if not r["error"] and r["first_token_sec"] is not None]
     if not ok:
         print("\n측정된 응답이 없습니다.")
@@ -111,7 +124,7 @@ def print_summary(records: list, throughput: float, think: bool):
     def mean(v):
         return round(sum(v) / len(v), 2)
 
-    print(f"\n===== 채팅 체감 지연 (추론 {'켬' if think else '끔'}) =====")
+    print(f"\n===== 채팅 체감 지연 — {model} (추론 {'켬' if think else '끔'}) =====")
     print(f"측정 시작 시점 생성 속도: {throughput} tok/s")
     print(f"첫 글자까지  평균 {mean(firsts)}s  중앙값 {firsts[len(firsts) // 2]}s  최대 {firsts[-1]}s")
     print(f"전체 완성까지 평균 {mean(totals)}s  중앙값 {totals[len(totals) // 2]}s")
