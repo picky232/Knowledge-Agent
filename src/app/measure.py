@@ -65,9 +65,9 @@ def render_bar(done: int, total: int, width: int = 30) -> str:
     return f"[{'█' * filled}{'░' * (width - filled)}] {percent:3d}% ({done}/{total})"
 
 
-def check_environment() -> float:
+def check_environment(model: str = "") -> float:
     print("측정 환경 점검 중...", flush=True)
-    throughput = measure_throughput(config.OLLAMA_HOST, config.ANSWER_MODEL)
+    throughput = measure_throughput(config.OLLAMA_HOST, model or config.ANSWER_MODEL)
     print(f"생성 속도: {throughput} tok/s (기준 {MIN_THROUGHPUT} tok/s)")
     return throughput
 
@@ -82,21 +82,27 @@ def load_questions(argv: list) -> list:
     return build_questions(count)
 
 
+def parse_option(argv: list, name: str, default):
+    if name in argv:
+        index = argv.index(name)
+        if index + 1 < len(argv):
+            return argv[index + 1]
+    return default
+
+
 def parse_top_k(argv: list) -> int:
     """--top-k N. 프롬프트에 넣을 근거 조각 수 — 첫 글자까지의 시간이 여기 달렸다."""
-    if "--top-k" in argv:
-        index = argv.index("--top-k")
-        if index + 1 < len(argv):
-            return int(argv[index + 1])
-    return 5
+    return int(parse_option(argv, "--top-k", 5))
 
 
 def main():
     # 거부율과 토큰 수는 생성 속도와 무관하므로, 환경이 느려도 정확도는 잴 수 있다.
     # 이 모드에서 나온 응답 시간은 보고하지 않는다.
     accuracy_only = "--accuracy-only" in sys.argv
+    top_k = parse_top_k(sys.argv)
+    model = parse_option(sys.argv, "--model", config.ANSWER_MODEL)
 
-    throughput = check_environment()
+    throughput = check_environment(model)
     if throughput < MIN_THROUGHPUT and not accuracy_only:
         print(
             f"\n중단합니다. 생성 속도가 {throughput} tok/s로 기준({MIN_THROUGHPUT})에 못 미칩니다.\n"
@@ -108,14 +114,13 @@ def main():
     if accuracy_only:
         print("정확도 측정 모드 — 응답 시간은 참고용으로만 기록합니다.\n")
 
-    top_k = parse_top_k(sys.argv)
-    skip = {"--accuracy-only", "--top-k", str(top_k)}
+    skip = {"--accuracy-only", "--top-k", str(top_k), "--model", model}
     questions = load_questions([a for a in sys.argv if a not in skip])
     if not questions:
         print("질문을 만들 데이터가 없습니다. 먼저 sync.py를 실행하세요.")
         sys.exit(1)
 
-    generator = InstrumentedAnswerGenerator(config.OLLAMA_HOST, config.ANSWER_MODEL)
+    generator = InstrumentedAnswerGenerator(config.OLLAMA_HOST, model)
     use_case = AskQuestionUseCase(
         embedding_service=container.build_embedding_service(),
         vector_repository=container.build_vector_repository(),
