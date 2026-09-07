@@ -10,16 +10,22 @@ def make_key(question: str) -> str:
 
 
 def _chunk_to_dict(c: DocumentChunk) -> dict:
+    # 본문까지 저장한다. 이걸 빼면 이어쓰기할 때 프롬프트의 [기록]이 제목만 남은
+    # 껍데기가 되어, 모델이 근거 없이 앞 문장을 이어 쓴다. 조각 다섯 개면
+    # 3~4KB라 상태 파일이 커지는 부담은 없다.
     return {
         "source": c.source, "project": c.project, "title": c.title,
-        "url": c.url, "created_at": c.created_at, "updated_at": c.updated_at,
+        "url": c.url, "content": c.content,
+        "created_at": c.created_at, "updated_at": c.updated_at,
     }
 
 
 def _dict_to_chunk(d: dict) -> DocumentChunk:
+    # content는 예전 상태 파일에는 없다. 그때는 빈 문자열로 두고 이어서 생성한다 —
+    # 근거가 없는 채로 이어지지만, 파일을 읽다 죽는 것보다는 낫다.
     return DocumentChunk(
         id="", document_id="", source=d["source"], project=d["project"],
-        title=d["title"], url=d["url"], content="",
+        title=d["title"], url=d["url"], content=d.get("content", ""),
         created_at=d["created_at"], updated_at=d["updated_at"],
     )
 
